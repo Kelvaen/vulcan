@@ -3,6 +3,7 @@ package com.vulcan.worker_service.controller;
 import com.vulcan.worker_service.dto.AssignWorkerRequest;
 import com.vulcan.worker_service.dto.SiteRequest;
 import com.vulcan.worker_service.service.WorkerService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +18,7 @@ public class WorkerController {
     }
 
     @PostMapping("/sites")
-    public ResponseEntity<?> createSite(@RequestBody SiteRequest request) {
+    public ResponseEntity<?> createSite(@Valid @RequestBody SiteRequest request) {
         return ResponseEntity.ok(workerService.createSite(request));
     }
 
@@ -27,7 +28,7 @@ public class WorkerController {
     }
 
     @PostMapping("/assign")
-    public ResponseEntity<?> assignWorker(@RequestBody AssignWorkerRequest request) {
+    public ResponseEntity<?> assignWorker(@Valid @RequestBody AssignWorkerRequest request) {
         return ResponseEntity.ok(workerService.assignWorkerToSite(request));
     }
 

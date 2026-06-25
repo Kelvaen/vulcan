@@ -1,19 +1,26 @@
 package com.vulcan.payroll_service.dto;
 
 import com.vulcan.payroll_service.entity.PaymentMethod;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 public class CreatePayrollRequest {
+    @NotNull(message = "Worker ID is required")
+    @Positive(message = "Worker ID must be positive")
     private Long workerId;
+
+    @NotBlank(message = "Pay period is required")
     private String payPeriod;
+
     private Double amount;
     private Integer daysWorked;
+
+    @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
 
-    // Mobile money
     private String momoNumber;
     private String momoNetwork;
-
-    // Bank
     private String bankName;
     private String accountNumber;
     private String accountName;

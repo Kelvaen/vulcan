@@ -4,6 +4,7 @@ import com.vulcan.task_service.dto.CreateTaskRequest;
 import com.vulcan.task_service.dto.UpdateTaskStatusRequest;
 import com.vulcan.task_service.entity.TaskStatus;
 import com.vulcan.task_service.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class TaskController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createTask(@RequestBody CreateTaskRequest request) {
+    public ResponseEntity<?> createTask(@Valid @RequestBody CreateTaskRequest request) {
         return ResponseEntity.ok(taskService.createTask(request));
     }
 
@@ -39,7 +40,8 @@ public class TaskController {
     }
 
     @GetMapping("/worker/{workerId}/status/{status}")
-    public ResponseEntity<?> getWorkerTasksByStatus(@PathVariable Long workerId, @PathVariable TaskStatus status) {
+    public ResponseEntity<?> getWorkerTasksByStatus(@PathVariable Long workerId,
+                                                    @PathVariable TaskStatus status) {
         return ResponseEntity.ok(taskService.getWorkerTasksByStatus(workerId, status));
     }
 }

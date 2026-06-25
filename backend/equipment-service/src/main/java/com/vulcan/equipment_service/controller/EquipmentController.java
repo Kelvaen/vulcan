@@ -3,6 +3,7 @@ package com.vulcan.equipment_service.controller;
 import com.vulcan.equipment_service.dto.EquipmentRequest;
 import com.vulcan.equipment_service.dto.UpdateStateRequest;
 import com.vulcan.equipment_service.service.EquipmentService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +18,7 @@ public class EquipmentController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerEquipment(@RequestBody EquipmentRequest request) {
+    public ResponseEntity<?> registerEquipment(@Valid @RequestBody EquipmentRequest request) {
         return ResponseEntity.ok(equipmentService.registerEquipment(request));
     }
 

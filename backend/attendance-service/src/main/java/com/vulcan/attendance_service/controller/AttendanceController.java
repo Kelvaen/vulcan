@@ -3,6 +3,7 @@ package com.vulcan.attendance_service.controller;
 import com.vulcan.attendance_service.dto.ClockInRequest;
 import com.vulcan.attendance_service.dto.ClockOutRequest;
 import com.vulcan.attendance_service.service.AttendanceService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,12 +18,12 @@ public class AttendanceController {
     }
 
     @PostMapping("/clock-in")
-    public ResponseEntity<String> clockIn(@RequestBody ClockInRequest request) {
+    public ResponseEntity<String> clockIn(@Valid @RequestBody ClockInRequest request) {
         return ResponseEntity.ok(attendanceService.clockIn(request));
     }
 
     @PostMapping("/clock-out")
-    public ResponseEntity<String> clockOut(@RequestBody ClockOutRequest request) {
+    public ResponseEntity<String> clockOut(@Valid @RequestBody ClockOutRequest request) {
         return ResponseEntity.ok(attendanceService.clockOut(request));
     }
 

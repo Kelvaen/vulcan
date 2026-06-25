@@ -2,6 +2,7 @@ package com.vulcan.payroll_service.controller;
 
 import com.vulcan.payroll_service.dto.CreatePayrollRequest;
 import com.vulcan.payroll_service.service.PayrollService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +17,7 @@ public class PayrollController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPayroll(@RequestBody CreatePayrollRequest request) {
+    public ResponseEntity<?> createPayroll(@Valid @RequestBody CreatePayrollRequest request) {
         return ResponseEntity.ok(payrollService.createPayroll(request));
     }
 
@@ -36,7 +37,8 @@ public class PayrollController {
     }
 
     @PutMapping("/worker/{workerId}/exclude")
-    public ResponseEntity<?> excludeGhostWorker(@PathVariable Long workerId, @RequestParam String payPeriod) {
+    public ResponseEntity<?> excludeGhostWorker(@PathVariable Long workerId,
+                                                @RequestParam String payPeriod) {
         return ResponseEntity.ok(payrollService.excludeGhostWorker(workerId, payPeriod));
     }
 }

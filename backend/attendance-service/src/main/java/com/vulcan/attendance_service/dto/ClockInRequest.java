@@ -1,9 +1,21 @@
 package com.vulcan.attendance_service.dto;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 public class ClockInRequest {
+    @NotNull(message = "Worker ID is required")
+    @Positive(message = "Worker ID must be positive")
     private Long workerId;
+
+    @NotNull(message = "Site ID is required")
+    @Positive(message = "Site ID must be positive")
     private Long siteId;
+
+    @NotNull(message = "GPS latitude is required")
     private Double gpsLat;
+
+    @NotNull(message = "GPS longitude is required")
     private Double gpsLng;
 
     public Long getWorkerId() { return workerId; }

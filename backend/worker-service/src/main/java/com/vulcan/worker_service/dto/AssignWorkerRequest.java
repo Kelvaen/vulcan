@@ -1,7 +1,15 @@
 package com.vulcan.worker_service.dto;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 public class AssignWorkerRequest {
+    @NotNull(message = "Worker ID is required")
+    @Positive(message = "Worker ID must be positive")
     private Long workerId;
+
+    @NotNull(message = "Site ID is required")
+    @Positive(message = "Site ID must be positive")
     private Long siteId;
 
     public Long getWorkerId() { return workerId; }

@@ -4,6 +4,7 @@ import com.vulcan.site_survey_service.dto.SubmitSurveyRequest;
 import com.vulcan.site_survey_service.dto.VerifySurveyRequest;
 import com.vulcan.site_survey_service.entity.SurveyStatus;
 import com.vulcan.site_survey_service.service.SiteSurveyService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class SiteSurveyController {
     }
 
     @PostMapping
-    public ResponseEntity<?> submitSurvey(@RequestBody SubmitSurveyRequest request) {
+    public ResponseEntity<?> submitSurvey(@Valid @RequestBody SubmitSurveyRequest request) {
         return ResponseEntity.ok(siteSurveyService.submitSurvey(request));
     }
 
@@ -38,7 +39,8 @@ public class SiteSurveyController {
     }
 
     @PutMapping("/{surveyId}/verify")
-    public ResponseEntity<?> verifySurvey(@PathVariable Long surveyId, @RequestBody VerifySurveyRequest request) {
+    public ResponseEntity<?> verifySurvey(@PathVariable Long surveyId,
+                                          @RequestBody VerifySurveyRequest request) {
         return ResponseEntity.ok(siteSurveyService.verifySurvey(surveyId, request));
     }
 

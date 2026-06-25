@@ -1,10 +1,22 @@
 package com.vulcan.worker_service.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 public class SiteRequest {
+    @NotBlank(message = "Site name is required")
     private String name;
+
     private String location;
+
+    @NotNull(message = "GPS latitude is required")
     private Double gpsLat;
+
+    @NotNull(message = "GPS longitude is required")
     private Double gpsLng;
+
+    @Positive(message = "Radius must be a positive number")
     private Double radiusMeters;
 
     public String getName() { return name; }
