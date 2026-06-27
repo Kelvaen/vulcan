@@ -6,6 +6,7 @@ import com.vulcan.attendance_service.dto.SiteAssignmentDto;
 import com.vulcan.attendance_service.entity.Attendance;
 import com.vulcan.attendance_service.entity.AttendanceStatus;
 import com.vulcan.attendance_service.repository.AttendanceRepository;
+import com.vulcan.attendance_service.dto.AiVerificationResult;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -106,5 +107,41 @@ public class AttendanceService {
                 .filter(a -> a.getStatus() == AttendanceStatus.PRESENT)
                 .filter(a -> a.getAttendanceDate() != null && a.getAttendanceDate().toString().startsWith(payPeriod))
                 .count();
+    }
+    public String verifyGroupPhoto(Long siteId, String photoUrl) {
+        try {
+            // Call face detection service
+            String url = "http://localhost:9000/verify-attendance?site_id=" + siteId;
+            Object result = restTemplate.postForObject(url, null, Object.class);
+            return "Attendance verified successfully: " + result;
+        } catch (Exception e) {
+            return "Face verification failed: " + e.getMessage();
+        }
+    }
+    public String updateAttendanceFromAi(AiVerificationResult result) {
+        for (Long workerId : result.getPresent()) {
+            Optional<Attendance> existing = attendanceRepository
+                    .findByWorkerIdAndAttendanceDate(workerId, LocalDate.now());
+            if (existing.isPresent()) {
+                Attendance attendance = existing.get();
+                attendance.setVerifiedByAi(true);
+                attendance.setStatus(AttendanceStatus.PRESENT);
+                attendanceRepository.save(attendance);
+            }
+        }
+
+        for (Long workerId : result.getAbsent()) {
+            Optional<Attendance> existing = attendanceRepository
+                    .findByWorkerIdAndAttendanceDate(workerId, LocalDate.now());
+            if (existing.isPresent()) {
+                Attendance attendance = existing.get();
+                attendance.setVerifiedByAi(true);
+                attendance.setStatus(AttendanceStatus.ABSENT);
+                attendance.setIsAbsent(true);
+                attendanceRepository.save(attendance);
+            }
+        }
+
+        return "Attendance updated from AI verification. Present: " + result.getPresent().size() + ", Absent: " + result.getAbsent().size();
     }
 }

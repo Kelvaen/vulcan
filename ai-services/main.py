@@ -138,7 +138,7 @@ async def verify_attendance(site_id: int, file: UploadFile = File(...)):
                     )
 
                     # Threshold: 0.7 means 70% similar (adjust as needed)
-                    if similarity > 0.7:
+                    if similarity > 0.5:
                         is_present = True
                         break
 
