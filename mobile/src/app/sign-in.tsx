@@ -15,10 +15,11 @@ import { PrimaryButton, Notice } from '../components/ui';
 import { landingFor, useAuth } from '../context/auth';
 import { useTheme } from '../context/theme';
 
-// Dev convenience — the two accounts seeded/created during backend bring-up.
+// Dev convenience. The admin is seeded automatically on every fresh database,
+// so that chip works on any machine; the worker account is created manually.
 const DEMO_ACCOUNTS = [
   { label: 'Worker demo', email: 'yaw@vulcan.com', password: 'worker123' },
-  { label: 'Admin demo', email: 'kelvin@vulcan.com', password: 'vulcan2026' },
+  { label: 'Admin demo', email: 'admin@vulcan.com', password: 'ChangeMe!2026' },
 ];
 
 export default function SignIn() {
