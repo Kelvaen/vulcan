@@ -7,6 +7,7 @@ import com.vulcan.attendance_service.dto.AiVerificationResult;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/attendance")
@@ -40,8 +41,8 @@ public class AttendanceController {
     @PostMapping("/verify-group-photo")
     public ResponseEntity<String> verifyGroupPhoto(
             @RequestParam Long siteId,
-            @RequestParam String photoUrl) {
-        return ResponseEntity.ok(attendanceService.verifyGroupPhoto(siteId, photoUrl));
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(attendanceService.verifyGroupPhoto(siteId, file));
     }
     @PostMapping("/update-from-ai")
     public ResponseEntity<String> updateFromAi(@RequestBody AiVerificationResult result) {

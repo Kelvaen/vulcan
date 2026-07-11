@@ -8,8 +8,15 @@ import com.vulcan.attendance_service.entity.AttendanceStatus;
 import com.vulcan.attendance_service.repository.AttendanceRepository;
 import com.vulcan.attendance_service.dto.AiVerificationResult;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,6 +30,9 @@ public class AttendanceService {
 
     @Value("${services.worker.url}")
     private String workerServiceUrl;
+
+    @Value("${services.ai.url:http://localhost:9000}")
+    private String aiServiceUrl;
 
     public AttendanceService(AttendanceRepository attendanceRepository, RestTemplate restTemplate) {
         this.attendanceRepository = attendanceRepository;
@@ -108,12 +118,27 @@ public class AttendanceService {
                 .filter(a -> a.getAttendanceDate() != null && a.getAttendanceDate().toString().startsWith(payPeriod))
                 .count();
     }
-    public String verifyGroupPhoto(Long siteId, String photoUrl) {
+    public String verifyGroupPhoto(Long siteId, MultipartFile photo) {
         try {
-            // Call face detection service
-            String url = "http://localhost:9000/verify-attendance?site_id=" + siteId;
-            Object result = restTemplate.postForObject(url, null, Object.class);
-            return "Attendance verified successfully: " + result;
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new ByteArrayResource(photo.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return photo.getOriginalFilename() == null ? "group-photo.jpg" : photo.getOriginalFilename();
+                }
+            });
+
+            String url = aiServiceUrl + "/verify-attendance?site_id=" + siteId;
+            AiVerificationResult result = restTemplate.postForObject(
+                    url, new HttpEntity<>(body, headers), AiVerificationResult.class);
+
+            if (result == null || result.getPresent() == null || result.getAbsent() == null) {
+                return "Face verification returned no usable result";
+            }
+            return updateAttendanceFromAi(result);
         } catch (Exception e) {
             return "Face verification failed: " + e.getMessage();
         }

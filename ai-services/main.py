@@ -35,6 +35,27 @@ def save_image_temp(image_bytes: bytes) -> str:
         tmp.write(image_bytes)
         return tmp.name
 
+@app.on_event("startup")
+def ensure_schema():
+    """Create the face_embeddings table up front so /verify-attendance
+    works even before the first face is registered."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS face_embeddings (
+                id SERIAL PRIMARY KEY,
+                worker_id BIGINT UNIQUE NOT NULL,
+                embedding TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"WARNING: could not ensure face_embeddings table: {e}")
+
 @app.get("/")
 def health_check():
     return {"status": "Vulcan Face Detection Service is running"}
