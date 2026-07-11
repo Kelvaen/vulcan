@@ -58,6 +58,6 @@ public class AuthService {
             return "Account not yet approved by admin";
         }
 
-        return jwtService.generateToken(user.getEmail(), user.getRole().name());
+        return jwtService.generateToken(user.getEmail(), user.getRole().name(), user.getId(), user.getFullName());
     }
 }

@@ -18,13 +18,20 @@ public class JwtService {
     }
 
     public String generateToken(String email, String role) {
-        return Jwts.builder()
+        return generateToken(email, role, null, null);
+    }
+
+    // userId/fullName ride along as claims so clients know who logged in
+    // without an extra round-trip. Older callers keep working.
+    public String generateToken(String email, String role, Long userId, String fullName) {
+        var builder = Jwts.builder()
                 .subject(email)
                 .claim("role", role)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION))
-                .signWith(getKey())
-                .compact();
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION));
+        if (userId != null) builder.claim("userId", userId);
+        if (fullName != null) builder.claim("fullName", fullName);
+        return builder.signWith(getKey()).compact();
     }
 
     public String extractEmail(String token) {

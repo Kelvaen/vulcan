@@ -1,5 +1,6 @@
 package com.vulcan.auth_service.repository;
 
+import com.vulcan.auth_service.entity.Role;
 import com.vulcan.auth_service.entity.Status;
 import com.vulcan.auth_service.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,4 +13,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
     List<User> findByStatus(Status status);
+    boolean existsByRoleAndStatus(Role role, Status status);
 }
