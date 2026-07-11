@@ -1,0 +1,12 @@
+# Vulcan AI Face Detection Service — Python 3.13
+# Install: python -m venv venv && venv\Scripts\pip install -r requirements.txt
+fastapi==0.138.0
+uvicorn==0.49.0
+python-multipart==0.0.32
+psycopg2-binary==2.9.12
+numpy==2.5.0
+pillow==12.2.0
+opencv-python==4.13.0.92
+tensorflow==2.21.0
+deepface==0.0.100
+tf-keras

@@ -241,6 +241,59 @@ eyJhbGciOiJIUzI1NiJ9...
 
 ---
 
+### Verify Group Photo (Supervisor)
+**POST** `/api/attendance/verify-group-photo?siteId=1`
+> Token required
+> Content type: `multipart/form-data` with the group photo in a `file` field
+
+The photo is forwarded to the AI face detection service, matched against registered
+face embeddings, and today's attendance records are updated automatically.
+
+**Response:** `"Attendance updated from AI verification. Present: 12, Absent: 2"`
+
+---
+
+### Update Attendance From AI (internal)
+**POST** `/api/attendance/update-from-ai`
+> Token required
+
+**Request Body:**
+```json
+{
+    "present": [1, 2, 3],
+    "absent": [4]
+}
+```
+
+**Response:** `"Attendance updated from AI verification. Present: 3, Absent: 1"`
+
+---
+
+## 3b. AI FACE DETECTION SERVICE — `http://localhost:9000`
+
+### Register a Worker's Face
+**POST** `/register-face?worker_id=1`
+> Content type: `multipart/form-data` with a clear single-face photo in a `file` field
+
+**Response:** `{"message": "Face registered successfully for worker 1"}`
+
+### Verify Attendance From Group Photo
+**POST** `/verify-attendance?site_id=1`
+> Content type: `multipart/form-data` with the group photo in a `file` field
+> Normally called by the attendance service, not directly.
+
+**Response:**
+```json
+{
+    "present": [1, 2],
+    "absent": [3],
+    "total_detected_faces": 2,
+    "total_registered_workers": 3
+}
+```
+
+---
+
 ## 4. EQUIPMENT SERVICE — `http://localhost:8084`
 
 ### Register Equipment
