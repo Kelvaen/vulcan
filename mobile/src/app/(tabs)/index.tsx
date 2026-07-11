@@ -1,0 +1,278 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Card, Notice, PrimaryButton, SectionLabel } from '../../components/ui';
+import { useAuth } from '../../context/auth';
+import { useTheme } from '../../context/theme';
+import { clockIn, clockOut, getWorkerSite, type Site } from '../../lib/api';
+
+// Fallback when the account predates the userId JWT claim or has no site assignment.
+const FALLBACK_SITE: Site = {
+  id: 1,
+  name: 'Obuasi Site A',
+  location: 'Obuasi, Ashanti',
+  gpsLat: 6.2028,
+  gpsLng: -1.663,
+  radiusMeters: 150,
+};
+const FALLBACK_WORKER_ID = 2;
+
+const TASKS = [
+  { id: 1, title: 'Rebar tying — Block C footing', sub: 'From Supervisor Adjei · 06:30', done: true },
+  { id: 2, title: 'Aggregate haulage — Pit 2 → Crusher', sub: '12 of 20 trips', done: false },
+  { id: 3, title: 'Formwork strip — Block B', sub: 'Queued · after 13:00', done: false },
+];
+
+function useClock(): Date {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return now;
+}
+
+export default function Home() {
+  const { p } = useTheme();
+  const { session, displayName, initials } = useAuth();
+  const router = useRouter();
+  const now = useClock();
+  const [onShift, setOnShift] = useState(false);
+  const [since, setSince] = useState('');
+  const [notice, setNotice] = useState<{ text: string; tone: 'good' | 'warn' | 'error' }>({
+    text: '',
+    tone: 'good',
+  });
+  const [busy, setBusy] = useState(false);
+  const [tasks, setTasks] = useState(TASKS);
+  const [site, setSite] = useState<Site>(FALLBACK_SITE);
+
+  const workerId = session?.userId ?? FALLBACK_WORKER_ID;
+
+  useEffect(() => {
+    if (!session) return;
+    getWorkerSite(session.token, workerId)
+      .then((s) => {
+        if (s) setSite(s);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.token]);
+
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  const greeting = now.getHours() < 12 ? 'Morning,' : now.getHours() < 17 ? 'Afternoon,' : 'Evening,';
+
+  async function handleClock() {
+    if (!session) return;
+    setBusy(true);
+    setNotice({ text: '', tone: 'good' });
+    try {
+      if (!onShift) {
+        const msg = await clockIn(session.token, {
+          workerId,
+          siteId: site.id,
+          gpsLat: site.gpsLat,
+          gpsLng: site.gpsLng,
+        });
+        const ok = msg.toLowerCase().includes('success');
+        const already = msg.toLowerCase().includes('already');
+        if (ok || already) {
+          setOnShift(true);
+          setSince(`${hh}:${mm}`);
+        }
+        setNotice({ text: msg, tone: ok ? 'good' : already ? 'warn' : 'error' });
+      } else {
+        const msg = await clockOut(session.token, { workerId, siteId: site.id });
+        const ok = msg.toLowerCase().includes('success');
+        if (ok || msg.toLowerCase().includes('already')) setOnShift(false);
+        setNotice({ text: msg, tone: ok ? 'good' : 'warn' });
+      }
+    } catch (e: any) {
+      setNotice({ text: e?.message ?? 'Network error — request queued for sync', tone: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: p.screen }}
+      contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 40 }}
+    >
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.push('/profile')}
+          style={[styles.avatar, { backgroundColor: p.avatar, borderColor: p.line }]}
+        >
+          <Text style={{ fontSize: 13, fontWeight: '700', color: p.ink2 }}>{initials}</Text>
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 12, color: p.ink3 }}>{greeting}</Text>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: p.ink }}>{displayName}</Text>
+        </View>
+        <View style={[styles.bell, { backgroundColor: p.card, borderColor: p.line }]}>
+          <Ionicons name="notifications-outline" size={18} color={p.ink2} />
+          <View style={[styles.bellDot, { backgroundColor: p.accent }]} />
+        </View>
+      </View>
+
+      <View style={[styles.siteChip, { backgroundColor: p.card, borderColor: p.line }]}>
+        <Ionicons name="location-outline" size={13} color={p.accent} />
+        <Text style={{ fontSize: 12, color: p.ink2 }}>{site.name} · {site.location}</Text>
+      </View>
+
+      <Card
+        style={[
+          { alignItems: 'center', paddingVertical: 22, borderRadius: 20, backgroundColor: p.card2 },
+          onShift && { borderColor: 'rgba(12,163,12,0.5)' },
+        ]}
+      >
+        <Text style={{ fontSize: 11, letterSpacing: 1.8, color: p.ink3, fontWeight: '700' }}>
+          CURRENT SHIFT
+        </Text>
+        <Text style={[styles.time, { color: p.ink }]}>
+          {hh}:{mm}:{ss}
+        </Text>
+        <Text style={{ fontSize: 12, color: p.ink3, marginBottom: 14 }}>
+          {now.toLocaleDateString('en-GB', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </Text>
+        <View
+          style={[
+            styles.pill,
+            { backgroundColor: onShift ? 'rgba(12,163,12,0.12)' : p.track },
+          ]}
+        >
+          <View style={[styles.dot, { backgroundColor: onShift ? p.good : p.ink3 }]} />
+          <Text style={{ fontSize: 11.5, fontWeight: '600', color: onShift ? p.goodText : p.ink2 }}>
+            {onShift ? `On site · since ${since}` : 'Off shift'}
+          </Text>
+        </View>
+        {onShift && (
+          <View style={styles.gpsRow}>
+            <Ionicons name="checkmark" size={13} color={p.goodText} />
+            <Text style={{ fontSize: 11.5, color: p.goodText }}>
+              GPS verified — inside site geofence
+            </Text>
+          </View>
+        )}
+        <PrimaryButton
+          title={onShift ? 'Clock Out' : 'Clock In'}
+          variant={onShift ? 'ghost' : 'solid'}
+          onPress={handleClock}
+          loading={busy}
+          style={{ alignSelf: 'stretch', marginTop: 16 }}
+        />
+        <Notice text={notice.text} tone={notice.tone} />
+      </Card>
+
+      <SectionLabel>Today's tasks · {tasks.length}</SectionLabel>
+      {tasks.map((t) => (
+        <Pressable
+          key={t.id}
+          onPress={() =>
+            setTasks((list) => list.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)))
+          }
+        >
+          <Card style={[styles.task, { marginBottom: 8 }]}>
+            <View
+              style={[
+                styles.tick,
+                { borderColor: p.ink3 },
+                t.done && { backgroundColor: p.good, borderColor: p.good },
+              ]}
+            >
+              {t.done && <Ionicons name="checkmark" size={13} color="#fff" />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 13.5,
+                  fontWeight: '600',
+                  color: t.done ? p.ink3 : p.ink,
+                  textDecorationLine: t.done ? 'line-through' : 'none',
+                }}
+              >
+                {t.title}
+              </Text>
+              <Text style={{ fontSize: 11, color: p.ink3, marginTop: 2 }}>{t.sub}</Text>
+            </View>
+          </Card>
+        </Pressable>
+      ))}
+
+      <SectionLabel>This period</SectionLabel>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <Card style={{ flex: 1 }}>
+          <Text style={{ fontSize: 21, fontWeight: '800', color: p.ink }}>18 days</Text>
+          <Text style={[styles.statLabel, { color: p.ink3 }]}>ATTENDANCE STREAK</Text>
+        </Card>
+        <Card style={{ flex: 1 }}>
+          <Text style={{ fontSize: 21, fontWeight: '800', color: p.ink }}>42.5 h</Text>
+          <Text style={[styles.statLabel, { color: p.ink3 }]}>HOURS THIS WEEK</Text>
+        </Card>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bell: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellDot: { position: 'absolute', top: 9, right: 9, width: 7, height: 7, borderRadius: 4 },
+  siteChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 100,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    marginTop: 14,
+    marginBottom: 16,
+  },
+  time: { fontSize: 44, fontWeight: '800', fontVariant: ['tabular-nums'], marginVertical: 4 },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 100,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+  },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  gpsRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  task: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+  tick: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statLabel: { fontSize: 10, letterSpacing: 1.2, fontWeight: '700', marginTop: 3 },
+});
