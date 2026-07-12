@@ -320,3 +320,46 @@ export async function registerFace(
     return text;
   }
 }
+
+export async function updateEquipmentState(
+  token: string,
+  equipmentId: number,
+  state: EquipmentState,
+): Promise<string> {
+  const res = await fetch(`${API.equipment}/api/equipment/${equipmentId}/state`, {
+    method: 'PUT',
+    headers: authed(token),
+    body: JSON.stringify({ state }),
+  });
+  return res.text();
+}
+
+// ---------- survey review ----------
+export interface Survey {
+  id: number;
+  siteId: number;
+  foremanId: number;
+  reportText: string;
+  photoUrl: string | null;
+  status: 'SUBMITTED' | 'VERIFIED' | 'MISMATCH' | 'PENALIZED';
+  createdAt?: string;
+}
+
+export async function getSurveysByStatus(token: string, status: Survey['status']): Promise<Survey[]> {
+  const res = await fetch(`${API.survey}/api/surveys/status/${status}`, { headers: authed(token) });
+  if (!res.ok) throw new Error(`Surveys failed (${res.status})`);
+  return res.json();
+}
+
+export async function verifySurvey(
+  token: string,
+  surveyId: number,
+  body: { verifiedBy: number; status: 'VERIFIED' | 'MISMATCH' | 'PENALIZED'; verificationNotes: string },
+): Promise<string> {
+  const res = await fetch(`${API.survey}/api/surveys/${surveyId}/verify`, {
+    method: 'PUT',
+    headers: authed(token),
+    body: JSON.stringify(body),
+  });
+  return res.text();
+}

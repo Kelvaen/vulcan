@@ -4,7 +4,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'r
 import { Card, StatusChip } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
-import { getEquipment, type Equipment, type EquipmentState } from '../../lib/api';
+import { getEquipment, updateEquipmentState, type Equipment, type EquipmentState } from '../../lib/api';
 
 const STATE_META: Record<EquipmentState, { label: string; key: 'good' | 'warn' | 'serious' | 'critical' | 'neutral' }> = {
   AVAILABLE: { label: 'Available', key: 'good' },
@@ -30,6 +30,24 @@ export default function EquipmentScreen() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | EquipmentState>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [savingId, setSavingId] = useState<number | null>(null);
+
+  async function changeState(item: Equipment, state: EquipmentState) {
+    if (!session || savingId) return;
+    setSavingId(item.id);
+    const prev = item.state;
+    setItems((list) => list.map((x) => (x.id === item.id ? { ...x, state } : x)));
+    try {
+      await updateEquipmentState(session.token, item.id, state);
+      setExpandedId(null);
+    } catch {
+      setItems((list) => list.map((x) => (x.id === item.id ? { ...x, state: prev } : x)));
+      setError('Could not update state — try again');
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   const load = useCallback(async () => {
     if (!session) return;
@@ -127,19 +145,48 @@ export default function EquipmentScreen() {
         visible.map((e) => {
           const meta = STATE_META[e.state] ?? { label: e.state, key: 'neutral' as const };
           const c = chipColors(meta.key);
+          const expanded = expandedId === e.id;
           return (
-            <Card key={e.id} style={[styles.item, { marginBottom: 8 }]}>
-              <View style={[styles.icon, { backgroundColor: p.track }]}>
-                <Ionicons name="construct-outline" size={19} color={p.ink2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13.5, fontWeight: '700', color: p.ink }}>{e.name}</Text>
-                <Text style={{ fontSize: 10.5, color: p.ink3, marginTop: 3 }}>
-                  {e.equipmentCode} · Site {e.siteId}
-                </Text>
-              </View>
-              <StatusChip label={meta.label} color={c.color} bg={c.bg} />
-            </Card>
+            <Pressable key={e.id} onPress={() => setExpandedId(expanded ? null : e.id)}>
+              <Card style={{ marginBottom: 8 }}>
+                <View style={styles.item}>
+                  <View style={[styles.icon, { backgroundColor: p.track }]}>
+                    <Ionicons name="construct-outline" size={19} color={p.ink2} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13.5, fontWeight: '700', color: p.ink }}>{e.name}</Text>
+                    <Text style={{ fontSize: 10.5, color: p.ink3, marginTop: 3 }}>
+                      {e.equipmentCode} · Site {e.siteId}
+                    </Text>
+                  </View>
+                  <StatusChip label={meta.label} color={c.color} bg={c.bg} />
+                </View>
+                {expanded && (
+                  <View style={styles.stateRow}>
+                    <Text style={{ fontSize: 10, letterSpacing: 1.2, fontWeight: '700', color: p.ink3, width: '100%' }}>
+                      SET STATE
+                    </Text>
+                    {(Object.keys(STATE_META) as EquipmentState[])
+                      .filter((s) => s !== e.state)
+                      .map((s) => {
+                        const sc = chipColors(STATE_META[s].key);
+                        return (
+                          <Pressable
+                            key={s}
+                            disabled={savingId === e.id}
+                            onPress={() => changeState(e, s)}
+                            style={[styles.stateBtn, { backgroundColor: sc.bg, opacity: savingId === e.id ? 0.5 : 1 }]}
+                          >
+                            <Text style={{ fontSize: 11.5, fontWeight: '700', color: sc.color }}>
+                              {STATE_META[s].label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                  </View>
+                )}
+              </Card>
+            </Pressable>
           );
         })
       )}
@@ -159,7 +206,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   fchip: { borderWidth: 1, borderRadius: 100, paddingVertical: 7, paddingHorizontal: 14 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stateRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
+  stateBtn: { borderRadius: 100, paddingVertical: 7, paddingHorizontal: 13 },
   icon: {
     width: 42,
     height: 42,
