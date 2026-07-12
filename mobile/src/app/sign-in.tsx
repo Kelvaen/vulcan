@@ -118,6 +118,12 @@ export default function SignIn() {
           ))}
         </View>
 
+        <Pressable onPress={() => router.push('/register')} style={{ marginTop: 20 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: p.accent, textAlign: 'center' }}>
+            New here? Create an account
+          </Text>
+        </Pressable>
+
         <Text style={[styles.foot, { color: p.ink3 }]}>
           Offline-first · syncs over 2G when back in range{'\n'}
           Identity confirmed daily by facial verification
