@@ -38,4 +38,8 @@ public class AdminService {
     public List<User> getPendingUsers() {
         return userRepository.findByStatus(Status.PENDING);
     }
+
+    public List<User> getActiveUsers() {
+        return userRepository.findByStatus(Status.ACTIVE);
+    }
 }

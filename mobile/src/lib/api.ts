@@ -281,3 +281,42 @@ export async function rejectUser(token: string, userId: number): Promise<string>
   });
   return res.text();
 }
+
+// ---------- face enrollment ----------
+export interface ActiveUser {
+  id: number;
+  fullName: string;
+  email: string;
+  role: Role;
+}
+
+export async function getActiveUsers(token: string): Promise<ActiveUser[]> {
+  const res = await fetch(`${API.auth}/api/admin/users`, { headers: authed(token) });
+  if (!res.ok) throw new Error(`User list failed (${res.status})`);
+  return res.json();
+}
+
+/** Register one worker's face with the AI service (single clear face per photo). */
+export async function registerFace(
+  workerId: number,
+  photo: { uri: string; name: string; type: string },
+): Promise<string> {
+  const form = new FormData();
+  if (photo.uri.startsWith('data:') || photo.uri.startsWith('blob:')) {
+    const blob = await (await fetch(photo.uri)).blob();
+    form.append('file', blob, photo.name);
+  } else {
+    form.append('file', photo as unknown as Blob);
+  }
+  const res = await fetch(`${API.ai}/register-face?worker_id=${workerId}`, {
+    method: 'POST',
+    body: form,
+  });
+  const text = await res.text();
+  try {
+    const json = JSON.parse(text);
+    return json.message ?? json.detail ?? text;
+  } catch {
+    return text;
+  }
+}

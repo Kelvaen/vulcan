@@ -28,4 +28,9 @@ public class AdminController {
     public ResponseEntity<?> getPendingUsers() {
         return ResponseEntity.ok(adminService.getPendingUsers());
     }
+
+    @GetMapping("/users")
+    public ResponseEntity<?> getActiveUsers() {
+        return ResponseEntity.ok(adminService.getActiveUsers());
+    }
 }
