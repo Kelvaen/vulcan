@@ -5,7 +5,15 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, Notice, PrimaryButton, SectionLabel } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
-import { clockIn, clockOut, getWorkerSite, type Site } from '../../lib/api';
+import {
+  clockIn,
+  clockOut,
+  getWorkerSite,
+  getWorkerTasksToday,
+  updateTaskStatus,
+  type Site,
+  type WorkerTask,
+} from '../../lib/api';
 
 // Fallback when the account predates the userId JWT claim or has no site assignment.
 const FALLBACK_SITE: Site = {
@@ -17,12 +25,6 @@ const FALLBACK_SITE: Site = {
   radiusMeters: 150,
 };
 const FALLBACK_WORKER_ID = 2;
-
-const TASKS = [
-  { id: 1, title: 'Rebar tying — Block C footing', sub: 'From Supervisor Adjei · 06:30', done: true },
-  { id: 2, title: 'Aggregate haulage — Pit 2 → Crusher', sub: '12 of 20 trips', done: false },
-  { id: 3, title: 'Formwork strip — Block B', sub: 'Queued · after 13:00', done: false },
-];
 
 function useClock(): Date {
   const [now, setNow] = useState(new Date());
@@ -45,7 +47,8 @@ export default function Home() {
     tone: 'good',
   });
   const [busy, setBusy] = useState(false);
-  const [tasks, setTasks] = useState(TASKS);
+  const [tasks, setTasks] = useState<WorkerTask[]>([]);
+  const [tasksLoaded, setTasksLoaded] = useState(false);
   const [site, setSite] = useState<Site>(FALLBACK_SITE);
 
   const workerId = session?.userId ?? FALLBACK_WORKER_ID;
@@ -57,8 +60,24 @@ export default function Home() {
         if (s) setSite(s);
       })
       .catch(() => {});
+    getWorkerTasksToday(session.token, workerId)
+      .then(setTasks)
+      .catch(() => {})
+      .finally(() => setTasksLoaded(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.token]);
+
+  async function toggleTask(t: WorkerTask) {
+    if (!session) return;
+    const next: WorkerTask['status'] = t.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+    setTasks((list) => list.map((x) => (x.id === t.id ? { ...x, status: next } : x)));
+    try {
+      await updateTaskStatus(session.token, t.id, next);
+    } catch {
+      // revert on failure so the UI never lies about saved state
+      setTasks((list) => list.map((x) => (x.id === t.id ? { ...x, status: t.status } : x)));
+    }
+  }
 
   const hh = String(now.getHours()).padStart(2, '0');
   const mm = String(now.getMinutes()).padStart(2, '0');
@@ -174,39 +193,48 @@ export default function Home() {
       </Card>
 
       <SectionLabel>Today's tasks · {tasks.length}</SectionLabel>
-      {tasks.map((t) => (
-        <Pressable
-          key={t.id}
-          onPress={() =>
-            setTasks((list) => list.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)))
-          }
-        >
-          <Card style={[styles.task, { marginBottom: 8 }]}>
-            <View
-              style={[
-                styles.tick,
-                { borderColor: p.ink3 },
-                t.done && { backgroundColor: p.good, borderColor: p.good },
-              ]}
-            >
-              {t.done && <Ionicons name="checkmark" size={13} color="#fff" />}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 13.5,
-                  fontWeight: '600',
-                  color: t.done ? p.ink3 : p.ink,
-                  textDecorationLine: t.done ? 'line-through' : 'none',
-                }}
+      {tasksLoaded && tasks.length === 0 && (
+        <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+          <Ionicons name="cafe-outline" size={22} color={p.ink3} />
+          <Text style={{ fontSize: 12.5, color: p.ink3, marginTop: 8 }}>
+            No tasks assigned for today yet
+          </Text>
+        </Card>
+      )}
+      {tasks.map((t) => {
+        const done = t.status === 'COMPLETED';
+        return (
+          <Pressable key={t.id} onPress={() => toggleTask(t)}>
+            <Card style={[styles.task, { marginBottom: 8 }]}>
+              <View
+                style={[
+                  styles.tick,
+                  { borderColor: p.ink3 },
+                  done && { backgroundColor: p.good, borderColor: p.good },
+                ]}
               >
-                {t.title}
-              </Text>
-              <Text style={{ fontSize: 11, color: p.ink3, marginTop: 2 }}>{t.sub}</Text>
-            </View>
-          </Card>
-        </Pressable>
-      ))}
+                {done && <Ionicons name="checkmark" size={13} color="#fff" />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: '600',
+                    color: done ? p.ink3 : p.ink,
+                    textDecorationLine: done ? 'line-through' : 'none',
+                  }}
+                >
+                  {t.description}
+                </Text>
+                <Text style={{ fontSize: 11, color: p.ink3, marginTop: 2 }}>
+                  {t.assignedBy ? `Assigned by supervisor #${t.assignedBy}` : 'Assigned'} ·{' '}
+                  {t.status.replace('_', ' ').toLowerCase()}
+                </Text>
+              </View>
+            </Card>
+          </Pressable>
+        );
+      })}
 
       <SectionLabel>This period</SectionLabel>
       <View style={{ flexDirection: 'row', gap: 10 }}>

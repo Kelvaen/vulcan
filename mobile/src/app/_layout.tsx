@@ -17,6 +17,7 @@ function RootStack() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="sign-in" />
+        <Stack.Screen name="register" />
         <Stack.Screen name="profile" options={{ presentation: 'modal' }} />
       </Stack>
     </>

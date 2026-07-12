@@ -217,3 +217,67 @@ export async function getDashboard(token: string, payPeriod: string): Promise<an
   if (!res.ok) throw new Error(`Dashboard failed (${res.status})`);
   return res.json();
 }
+
+// ---------- tasks ----------
+export interface WorkerTask {
+  id: number;
+  siteId: number;
+  workerId: number;
+  assignedBy: number | null;
+  description: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'NOT_COMPLETED';
+  taskDate: string;
+}
+
+export async function getWorkerTasksToday(token: string, workerId: number): Promise<WorkerTask[]> {
+  const res = await fetch(`${API.task}/api/tasks/worker/${workerId}/today`, {
+    headers: authed(token),
+  });
+  if (!res.ok) throw new Error(`Tasks failed (${res.status})`);
+  return res.json();
+}
+
+export async function updateTaskStatus(
+  token: string,
+  taskId: number,
+  status: WorkerTask['status'],
+): Promise<string> {
+  const res = await fetch(`${API.task}/api/tasks/${taskId}/status`, {
+    method: 'PUT',
+    headers: { ...authed(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  return res.text();
+}
+
+// ---------- admin approvals ----------
+export interface PendingUser {
+  id: number;
+  fullName: string;
+  email: string;
+  phoneNumber: string | null;
+  role: Role;
+  status: string;
+}
+
+export async function getPendingUsers(token: string): Promise<PendingUser[]> {
+  const res = await fetch(`${API.auth}/api/admin/pending`, { headers: authed(token) });
+  if (!res.ok) throw new Error(`Pending list failed (${res.status})`);
+  return res.json();
+}
+
+export async function approveUser(token: string, userId: number): Promise<string> {
+  const res = await fetch(`${API.auth}/api/admin/approve/${userId}`, {
+    method: 'PUT',
+    headers: authed(token),
+  });
+  return res.text();
+}
+
+export async function rejectUser(token: string, userId: number): Promise<string> {
+  const res = await fetch(`${API.auth}/api/admin/reject/${userId}`, {
+    method: 'PUT',
+    headers: authed(token),
+  });
+  return res.text();
+}
