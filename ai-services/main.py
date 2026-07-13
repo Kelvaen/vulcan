@@ -14,7 +14,10 @@ app = FastAPI(title="Vulcan Face Detection Service")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=os.getenv(
+        "VULCAN_CORS_ORIGIN_REGEX",
+        r"http://(localhost|127\.0\.0\.1|192\.168\.[0-9.]+|10\.[0-9.]+)(:\d+)?",
+    ),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -22,11 +25,11 @@ app.add_middleware(
 # Database connection
 def get_db():
     return psycopg2.connect(
-        host="localhost",
-        port=5432,
-        database="vulcandb",
-        user="postgres",
-        password="kelvin"
+        host=os.getenv("DB_HOST", "localhost"),
+        port=int(os.getenv("DB_PORT", "5432")),
+        database=os.getenv("DB_NAME", "vulcandb"),
+        user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD", "kelvin")
     )
 
 def save_image_temp(image_bytes: bytes) -> str:

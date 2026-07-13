@@ -149,6 +149,27 @@ laptop running `expo start`, so the backend must be running on that same machine
 
 ---
 
+## Configuration (environment variables)
+
+Everything runs with sensible dev defaults — set these to override, and **always set the first
+three in any real deployment**:
+
+| Variable | Default | Used by |
+|---|---|---|
+| `VULCAN_JWT_SECRET` | dev secret (in code) | all backend services — token signing/validation |
+| `DB_PASSWORD` | `kelvin` | all backend services + AI service |
+| `VULCAN_ADMIN_PASSWORD` | `ChangeMe!2026` | auth-service — seeded admin |
+| `VULCAN_ADMIN_EMAIL` | `admin@vulcan.com` | auth-service — seeded admin |
+| `VULCAN_CORS_ORIGINS` | localhost + LAN patterns | backend services — allowed browser origins |
+| `VULCAN_CORS_ORIGIN_REGEX` | localhost + LAN regex | AI service — allowed browser origins |
+| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` | `localhost` / `5432` / `vulcandb` / `postgres` | AI service |
+| `EXPO_PUBLIC_API_HOST` | auto-detected | mobile app — backend host (needed in tunnel mode) |
+
+> All services must share the same `VULCAN_JWT_SECRET`, since every service validates the
+> tokens that auth-service signs.
+
+---
+
 ## Testing the API
 
 Use **Postman** to test endpoints. All endpoints require a JWT token in the `Authorization` header (except registration and login).

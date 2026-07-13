@@ -10,7 +10,7 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final String SECRET_KEY = "vulcan-secret-key-must-be-at-least-32-chars";
+    private final String SECRET_KEY = System.getenv().getOrDefault("VULCAN_JWT_SECRET", "vulcan-secret-key-must-be-at-least-32-chars");
     private final long EXPIRATION = 1000 * 60 * 60 * 24; // 24 hours
 
     private SecretKey getKey() {

@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.List;
 
 public class JwtFilter extends OncePerRequestFilter {
-    private final String SECRET_KEY = "vulcan-secret-key-must-be-at-least-32-chars";
+    private final String SECRET_KEY = System.getenv().getOrDefault("VULCAN_JWT_SECRET", "vulcan-secret-key-must-be-at-least-32-chars");
     private SecretKey getKey() { return Keys.hmacShaKeyFor(SECRET_KEY.getBytes()); }
 
     @Override
