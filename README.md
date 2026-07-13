@@ -108,6 +108,10 @@ venv\Scripts\pip install -r requirements.txt
 
 To pre-build all backend services once (downloads all dependencies), run `build-all.bat`.
 
+**Demo data:** with the stack running, `seed-demo-data.bat` creates a full demo crew, site,
+equipment, tasks, attendance and payroll in one command — see **DEMO.md** for a 5-minute
+presentation script.
+
 ### 6. Start Order
 
 Start the services in this order to avoid dependency issues:
