@@ -1,5 +1,6 @@
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
@@ -17,7 +18,8 @@ const ROSTER = 143;
 
 export default function Dashboard() {
   const { p } = useTheme();
-  const { session } = useAuth();
+  const { session, initials } = useAuth();
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
 
@@ -57,6 +59,13 @@ export default function Dashboard() {
             {session?.role ?? ''}
           </Text>
         </View>
+        <Pressable
+          onPress={() => router.push('/profile')}
+          style={[styles.avatar, { backgroundColor: p.avatar, borderColor: p.line }]}
+          accessibilityLabel="Profile and settings"
+        >
+          <Text style={{ fontSize: 12, fontWeight: '700', color: p.ink2 }}>{initials}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.kpis}>
@@ -146,6 +155,15 @@ export default function Dashboard() {
 
 const styles = StyleSheet.create({
   roleChip: { borderRadius: 100, paddingVertical: 5, paddingHorizontal: 12 },
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
   kpis: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 16 },
   kpi: { width: '48%', flexGrow: 1 },
   kpiV: { fontSize: 23, fontWeight: '800' },
