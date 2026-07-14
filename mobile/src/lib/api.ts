@@ -222,6 +222,8 @@ export interface Equipment {
   siteId: number;
   state: EquipmentState;
   type?: string | null;
+  hasProof?: boolean;
+  proofUpdatedAt?: string | null;
 }
 
 export async function getEquipment(token: string): Promise<Equipment[]> {
@@ -392,13 +394,25 @@ export async function updateEquipmentState(
   token: string,
   equipmentId: number,
   state: EquipmentState,
+  proofImage?: string,
 ): Promise<string> {
   const res = await fetch(`${API.equipment}/api/equipment/${equipmentId}/state`, {
     method: 'PUT',
     headers: authed(token),
-    body: JSON.stringify({ state }),
+    body: JSON.stringify(proofImage ? { state, proofImage } : { state }),
   });
   return res.text();
+}
+
+/** Fetch the base64 photo proof for an asset, or null if none. */
+export async function getEquipmentProof(token: string, equipmentId: number): Promise<string | null> {
+  const res = await fetch(`${API.equipment}/api/equipment/${equipmentId}/proof`, {
+    headers: authed(token),
+  });
+  if (res.status === 204) return null;
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data?.proofImage ?? null;
 }
 
 // ---------- survey review ----------

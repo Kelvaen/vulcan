@@ -37,4 +37,11 @@ public class EquipmentController {
                                          @RequestBody UpdateStateRequest request) {
         return ResponseEntity.ok(equipmentService.updateState(equipmentId, request));
     }
+
+    @GetMapping("/{equipmentId}/proof")
+    public ResponseEntity<?> getProof(@PathVariable Long equipmentId) {
+        String proof = equipmentService.getProof(equipmentId);
+        if (proof == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(java.util.Map.of("proofImage", proof));
+    }
 }
