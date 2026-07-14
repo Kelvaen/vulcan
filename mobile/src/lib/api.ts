@@ -123,7 +123,15 @@ export async function getSites(token: string): Promise<Site[]> {
   return res.json();
 }
 
-/** Find the site this worker is assigned to by scanning site assignments. */
+export interface SiteAssignment {
+  id: number;
+  workerId: number;
+  site: Site;
+  assignedDate: string;
+}
+
+/** The site this user is actually assigned to, or null if they have none.
+ *  No fallback — an unassigned user (e.g. an admin) genuinely has no site. */
 export async function getWorkerSite(token: string, workerId: number): Promise<Site | null> {
   const sites = await getSites(token);
   for (const site of sites) {
@@ -138,7 +146,40 @@ export async function getWorkerSite(token: string, workerId: number): Promise<Si
       /* keep scanning */
     }
   }
-  return sites[0] ?? null;
+  return null;
+}
+
+export async function getSiteWorkers(token: string, siteId: number): Promise<SiteAssignment[]> {
+  const res = await fetch(`${API.worker}/api/workers/sites/${siteId}/workers`, {
+    headers: authed(token),
+  });
+  if (!res.ok) throw new Error(`Site roster failed (${res.status})`);
+  return res.json();
+}
+
+export async function createSite(
+  token: string,
+  body: { name: string; location: string; gpsLat: number; gpsLng: number; radiusMeters: number },
+): Promise<string> {
+  const res = await fetch(`${API.worker}/api/workers/sites`, {
+    method: 'POST',
+    headers: authed(token),
+    body: JSON.stringify(body),
+  });
+  return res.text();
+}
+
+export async function assignWorkerToSite(
+  token: string,
+  workerId: number,
+  siteId: number,
+): Promise<string> {
+  const res = await fetch(`${API.worker}/api/workers/assign`, {
+    method: 'POST',
+    headers: authed(token),
+    body: JSON.stringify({ workerId, siteId }),
+  });
+  return res.text();
 }
 
 /** Upload a group photo; backend forwards it to the AI service and updates attendance. */

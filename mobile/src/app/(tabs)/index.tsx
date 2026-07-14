@@ -15,17 +15,6 @@ import {
   type WorkerTask,
 } from '../../lib/api';
 
-// Fallback when the account predates the userId JWT claim or has no site assignment.
-const FALLBACK_SITE: Site = {
-  id: 1,
-  name: 'Obuasi Site A',
-  location: 'Obuasi, Ashanti',
-  gpsLat: 6.2028,
-  gpsLng: -1.663,
-  radiusMeters: 150,
-};
-const FALLBACK_WORKER_ID = 2;
-
 function useClock(): Date {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -49,17 +38,23 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [tasks, setTasks] = useState<WorkerTask[]>([]);
   const [tasksLoaded, setTasksLoaded] = useState(false);
-  const [site, setSite] = useState<Site>(FALLBACK_SITE);
+  const [site, setSite] = useState<Site | null>(null);
+  const [siteLoaded, setSiteLoaded] = useState(false);
 
-  const workerId = session?.userId ?? FALLBACK_WORKER_ID;
+  // Only field staff clock in; admins/managers are oversight and have no site.
+  const isFieldStaff = session?.role === 'WORKER' || session?.role === 'SUPERVISOR';
+  const workerId = session?.userId ?? null;
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || !isFieldStaff || workerId == null) {
+      setSiteLoaded(true);
+      setTasksLoaded(true);
+      return;
+    }
     getWorkerSite(session.token, workerId)
-      .then((s) => {
-        if (s) setSite(s);
-      })
-      .catch(() => {});
+      .then(setSite)
+      .catch(() => {})
+      .finally(() => setSiteLoaded(true));
     getWorkerTasksToday(session.token, workerId)
       .then(setTasks)
       .catch(() => {})
@@ -85,7 +80,7 @@ export default function Home() {
   const greeting = now.getHours() < 12 ? 'Morning,' : now.getHours() < 17 ? 'Afternoon,' : 'Evening,';
 
   async function handleClock() {
-    if (!session) return;
+    if (!session || workerId == null || !site) return;
     setBusy(true);
     setNotice({ text: '', tone: 'good' });
     try {
@@ -138,62 +133,96 @@ export default function Home() {
         </View>
       </View>
 
-      <View style={[styles.siteChip, { backgroundColor: p.card, borderColor: p.line }]}>
-        <Ionicons name="location-outline" size={13} color={p.accent} />
-        <Text style={{ fontSize: 12, color: p.ink2 }}>{site.name} · {site.location}</Text>
-      </View>
-
-      <Card
-        style={[
-          { alignItems: 'center', paddingVertical: 22, borderRadius: 20, backgroundColor: p.card2 },
-          onShift && { borderColor: 'rgba(12,163,12,0.5)' },
-        ]}
-      >
-        <Text style={{ fontSize: 11, letterSpacing: 1.8, color: p.ink3, fontWeight: '700' }}>
-          CURRENT SHIFT
-        </Text>
-        <Text style={[styles.time, { color: p.ink }]}>
-          {hh}:{mm}:{ss}
-        </Text>
-        <Text style={{ fontSize: 12, color: p.ink3, marginBottom: 14 }}>
-          {now.toLocaleDateString('en-GB', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-        </Text>
-        <View
-          style={[
-            styles.pill,
-            { backgroundColor: onShift ? 'rgba(12,163,12,0.12)' : p.track },
-          ]}
-        >
-          <View style={[styles.dot, { backgroundColor: onShift ? p.good : p.ink3 }]} />
-          <Text style={{ fontSize: 11.5, fontWeight: '600', color: onShift ? p.goodText : p.ink2 }}>
-            {onShift ? `On site · since ${since}` : 'Off shift'}
-          </Text>
-        </View>
-        {onShift && (
-          <View style={styles.gpsRow}>
-            <Ionicons name="checkmark" size={13} color={p.goodText} />
-            <Text style={{ fontSize: 11.5, color: p.goodText }}>
-              GPS verified — inside site geofence
+      {!isFieldStaff && (
+        <Card style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Ionicons name="shield-outline" size={22} color={p.ink2} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: p.ink }}>Oversight account</Text>
+            <Text style={{ fontSize: 11.5, color: p.ink3, marginTop: 2 }}>
+              {session?.role === 'ADMIN'
+                ? 'Admins manage sites, approvals and equipment — no shift clock-in.'
+                : 'Managers monitor operations from the dashboard — no shift clock-in.'}
             </Text>
           </View>
-        )}
-        <PrimaryButton
-          title={onShift ? 'Clock Out' : 'Clock In'}
-          variant={onShift ? 'ghost' : 'solid'}
-          onPress={handleClock}
-          loading={busy}
-          style={{ alignSelf: 'stretch', marginTop: 16 }}
-        />
-        <Notice text={notice.text} tone={notice.tone} />
-      </Card>
+        </Card>
+      )}
 
-      <SectionLabel>Today's tasks · {tasks.length}</SectionLabel>
-      {tasksLoaded && tasks.length === 0 && (
+      {isFieldStaff && (
+        <>
+          <View style={[styles.siteChip, { backgroundColor: p.card, borderColor: p.line }]}>
+            <Ionicons name="location-outline" size={13} color={site ? p.accent : p.ink3} />
+            <Text style={{ fontSize: 12, color: p.ink2 }}>
+              {site ? `${site.name} · ${site.location}` : siteLoaded ? 'Not assigned to a site' : 'Loading site…'}
+            </Text>
+          </View>
+
+          <Card
+            style={[
+              { alignItems: 'center', paddingVertical: 22, borderRadius: 20, backgroundColor: p.card2 },
+              onShift && { borderColor: 'rgba(12,163,12,0.5)' },
+            ]}
+          >
+            <Text style={{ fontSize: 11, letterSpacing: 1.8, color: p.ink3, fontWeight: '700' }}>
+              CURRENT SHIFT
+            </Text>
+            <Text style={[styles.time, { color: p.ink }]}>
+              {hh}:{mm}:{ss}
+            </Text>
+            <Text style={{ fontSize: 12, color: p.ink3, marginBottom: 14 }}>
+              {now.toLocaleDateString('en-GB', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </Text>
+            <View
+              style={[
+                styles.pill,
+                { backgroundColor: onShift ? 'rgba(12,163,12,0.12)' : p.track },
+              ]}
+            >
+              <View style={[styles.dot, { backgroundColor: onShift ? p.good : p.ink3 }]} />
+              <Text style={{ fontSize: 11.5, fontWeight: '600', color: onShift ? p.goodText : p.ink2 }}>
+                {onShift ? `On site · since ${since}` : 'Off shift'}
+              </Text>
+            </View>
+            {onShift && (
+              <View style={styles.gpsRow}>
+                <Ionicons name="checkmark" size={13} color={p.goodText} />
+                <Text style={{ fontSize: 11.5, color: p.goodText }}>
+                  GPS verified — inside site geofence
+                </Text>
+              </View>
+            )}
+            {site ? (
+              <PrimaryButton
+                title={onShift ? 'Clock Out' : 'Clock In'}
+                variant={onShift ? 'ghost' : 'solid'}
+                onPress={handleClock}
+                loading={busy}
+                style={{ alignSelf: 'stretch', marginTop: 16 }}
+              />
+            ) : (
+              siteLoaded && (
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: p.warnText,
+                    textAlign: 'center',
+                    marginTop: 16,
+                    lineHeight: 18,
+                  }}
+                >
+                  You're not assigned to a site yet.{'\n'}Ask your admin to assign you before clocking in.
+                </Text>
+              )
+            )}
+            <Notice text={notice.text} tone={notice.tone} />
+          </Card>
+
+          <SectionLabel>Today's tasks · {tasks.length}</SectionLabel>
+          {tasksLoaded && tasks.length === 0 && (
         <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
           <Ionicons name="cafe-outline" size={22} color={p.ink3} />
           <Text style={{ fontSize: 12.5, color: p.ink3, marginTop: 8 }}>
@@ -236,17 +265,19 @@ export default function Home() {
         );
       })}
 
-      <SectionLabel>This period</SectionLabel>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <Card style={{ flex: 1 }}>
-          <Text style={{ fontSize: 21, fontWeight: '800', color: p.ink }}>18 days</Text>
-          <Text style={[styles.statLabel, { color: p.ink3 }]}>ATTENDANCE STREAK</Text>
-        </Card>
-        <Card style={{ flex: 1 }}>
-          <Text style={{ fontSize: 21, fontWeight: '800', color: p.ink }}>42.5 h</Text>
-          <Text style={[styles.statLabel, { color: p.ink3 }]}>HOURS THIS WEEK</Text>
-        </Card>
-      </View>
+          <SectionLabel>This period</SectionLabel>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Card style={{ flex: 1 }}>
+              <Text style={{ fontSize: 21, fontWeight: '800', color: p.ink }}>18 days</Text>
+              <Text style={[styles.statLabel, { color: p.ink3 }]}>ATTENDANCE STREAK</Text>
+            </Card>
+            <Card style={{ flex: 1 }}>
+              <Text style={{ fontSize: 21, fontWeight: '800', color: p.ink }}>42.5 h</Text>
+              <Text style={[styles.statLabel, { color: p.ink3 }]}>HOURS THIS WEEK</Text>
+            </Card>
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }

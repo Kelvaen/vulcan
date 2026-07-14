@@ -12,8 +12,11 @@ export default function TabsLayout() {
   if (!hydrated) return null;
 
   const role = session!.role;
-  const isManager = role === 'MANAGER' || role === 'ADMIN';
-  const isSupervisor = role === 'SUPERVISOR' || isManager;
+  const isAdmin = role === 'ADMIN';
+  const isManager = role === 'MANAGER';
+  const isSupervisor = role === 'SUPERVISOR';
+  const isFieldStaff = role === 'WORKER' || role === 'SUPERVISOR'; // clock in, get paid
+  const seesDashboard = isManager || isAdmin;
 
   return (
     <Tabs
@@ -35,6 +38,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
+          href: isFieldStaff ? undefined : null,
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
@@ -69,6 +73,7 @@ export default function TabsLayout() {
         name="pay"
         options={{
           title: 'Pay',
+          href: isFieldStaff ? undefined : null,
           tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
         }}
       />
@@ -76,9 +81,19 @@ export default function TabsLayout() {
         name="dashboard"
         options={{
           title: 'Dashboard',
-          href: isManager ? undefined : null,
+          href: seesDashboard ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="stats-chart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="sites"
+        options={{
+          title: 'Sites',
+          href: isAdmin ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="location-outline" size={size} color={color} />
           ),
         }}
       />
@@ -86,7 +101,7 @@ export default function TabsLayout() {
         name="approvals"
         options={{
           title: 'Approvals',
-          href: role === 'ADMIN' ? undefined : null,
+          href: isAdmin ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-add-outline" size={size} color={color} />
           ),
