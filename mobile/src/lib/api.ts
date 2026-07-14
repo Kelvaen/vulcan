@@ -278,6 +278,19 @@ export async function getWorkerTasksToday(token: string, workerId: number): Prom
   return res.json();
 }
 
+/** Supervisor assigns a free-text task to a worker for today. */
+export async function createTask(
+  token: string,
+  body: { siteId: number; workerId: number; assignedBy: number; description: string },
+): Promise<string> {
+  const res = await fetch(`${API.task}/api/tasks`, {
+    method: 'POST',
+    headers: authed(token),
+    body: JSON.stringify(body),
+  });
+  return res.text();
+}
+
 export async function updateTaskStatus(
   token: string,
   taskId: number,
