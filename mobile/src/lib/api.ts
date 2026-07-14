@@ -230,6 +230,19 @@ export async function getEquipment(token: string): Promise<Equipment[]> {
   return res.json();
 }
 
+/** Admin registers a new asset and assigns it to a site. */
+export async function createEquipment(
+  token: string,
+  body: { equipmentCode: string; name: string; type: string; siteId: number },
+): Promise<string> {
+  const res = await fetch(`${API.equipment}/api/equipment/register`, {
+    method: 'POST',
+    headers: authed(token),
+    body: JSON.stringify(body),
+  });
+  return res.text();
+}
+
 export async function getWorkerPayroll(token: string, workerId: number): Promise<any[]> {
   const res = await fetch(`${API.payroll}/api/payroll/worker/${workerId}`, {
     headers: authed(token),

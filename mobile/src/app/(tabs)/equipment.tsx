@@ -1,10 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, StatusChip } from '../../components/ui';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Card, Notice, PrimaryButton, StatusChip } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
-import { getEquipment, updateEquipmentState, type Equipment, type EquipmentState } from '../../lib/api';
+import {
+  createEquipment,
+  getEquipment,
+  getSites,
+  getWorkerSite,
+  updateEquipmentState,
+  type Equipment,
+  type EquipmentState,
+  type Site,
+} from '../../lib/api';
 
 const STATE_META: Record<EquipmentState, { label: string; key: 'good' | 'warn' | 'serious' | 'critical' | 'neutral' }> = {
   AVAILABLE: { label: 'Available', key: 'good' },
@@ -26,12 +35,32 @@ const FILTERS: Array<{ label: string; value: 'all' | EquipmentState }> = [
 export default function EquipmentScreen() {
   const { p } = useTheme();
   const { session } = useAuth();
+  const role = session?.role;
+  const isAdmin = role === 'ADMIN';
+  const canEditState = role === 'SUPERVISOR' || role === 'ADMIN';
+  // Supervisors and workers see only their own site's assets; admins/managers see all.
+  const scopedToSite = role === 'SUPERVISOR' || role === 'WORKER';
+
   const [items, setItems] = useState<Equipment[]>([]);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | EquipmentState>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [mySiteId, setMySiteId] = useState<number | null>(null);
+
+  // admin add-equipment form
+  const [sites, setSites] = useState<Site[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addCode, setAddCode] = useState('');
+  const [addType, setAddType] = useState('');
+  const [addSite, setAddSite] = useState<Site | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; tone: 'good' | 'warn' | 'error' }>({
+    text: '',
+    tone: 'good',
+  });
 
   async function changeState(item: Equipment, state: EquipmentState) {
     if (!session || savingId) return;
@@ -53,17 +82,61 @@ export default function EquipmentScreen() {
     if (!session) return;
     try {
       setError('');
-      setItems(await getEquipment(session.token));
+      const [all, resolvedSite] = await Promise.all([
+        getEquipment(session.token),
+        scopedToSite && session.userId != null
+          ? getWorkerSite(session.token, session.userId)
+          : Promise.resolve(null),
+      ]);
+      setMySiteId(resolvedSite?.id ?? null);
+      setItems(all);
+      if (isAdmin) {
+        try {
+          setSites(await getSites(session.token));
+        } catch {
+          /* ignore */
+        }
+      }
     } catch (e: any) {
       setError(e?.message ?? 'Could not load equipment');
     }
-  }, [session]);
+  }, [session, scopedToSite, isAdmin]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const visible = items.filter((i) => filter === 'all' || i.state === filter);
+  async function submitEquipment() {
+    if (!session) return;
+    if (!addName || !addCode || !addSite) {
+      setNotice({ text: 'Name, code and site are required', tone: 'warn' });
+      return;
+    }
+    setAdding(true);
+    try {
+      const msg = await createEquipment(session.token, {
+        equipmentCode: addCode,
+        name: addName,
+        type: addType || 'General',
+        siteId: addSite.id,
+      });
+      const ok = msg.toLowerCase().includes('success');
+      setNotice({ text: msg, tone: ok ? 'good' : 'error' });
+      if (ok) {
+        setAddName(''); setAddCode(''); setAddType(''); setAddSite(null);
+        setShowAdd(false);
+        await load();
+      }
+    } catch (e: any) {
+      setNotice({ text: e?.message ?? 'Could not add equipment', tone: 'error' });
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  const visible = items
+    .filter((i) => !scopedToSite || mySiteId == null || i.siteId === mySiteId)
+    .filter((i) => filter === 'all' || i.state === filter);
 
   function chipColors(key: string): { color: string; bg: string } {
     switch (key) {
@@ -99,14 +172,53 @@ export default function EquipmentScreen() {
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 22, fontWeight: '800', color: p.ink }}>Equipment</Text>
           <Text style={{ fontSize: 12, color: p.ink3, marginTop: 2 }}>
-            {items.length} assets · live from equipment-service
+            {scopedToSite ? 'Your site · ' : ''}{visible.length} of {items.length} assets
           </Text>
         </View>
-        <Pressable style={[styles.scan, { backgroundColor: p.accentSoft, borderColor: 'rgba(233,69,96,0.3)' }]}>
-          <Ionicons name="qr-code-outline" size={15} color={p.accent} />
-          <Text style={{ fontSize: 12, fontWeight: '700', color: p.accent }}>Scan ID</Text>
-        </Pressable>
+        {isAdmin && (
+          <Pressable
+            onPress={() => setShowAdd((v) => !v)}
+            style={[styles.scan, { backgroundColor: p.accentSoft, borderColor: 'rgba(233,69,96,0.3)' }]}
+          >
+            <Ionicons name={showAdd ? 'close' : 'add'} size={16} color={p.accent} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: p.accent }}>
+              {showAdd ? 'Cancel' : 'Add'}
+            </Text>
+          </Pressable>
+        )}
       </View>
+
+      <Notice text={notice.text} tone={notice.tone} />
+
+      {isAdmin && showAdd && (
+        <Card style={{ marginTop: 12 }}>
+          <Text style={[styles.miniLabel, { color: p.ink3 }]}>ASSET NAME</Text>
+          <TextInput value={addName} onChangeText={setAddName} placeholder="CAT 320 Excavator" placeholderTextColor={p.ink3} style={[styles.input, { backgroundColor: p.card2, borderColor: p.line, color: p.ink }]} />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.miniLabel, { color: p.ink3, marginTop: 10 }]}>CODE</Text>
+              <TextInput value={addCode} onChangeText={setAddCode} autoCapitalize="characters" placeholder="VLC-EQ-0100" placeholderTextColor={p.ink3} style={[styles.input, { backgroundColor: p.card2, borderColor: p.line, color: p.ink }]} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.miniLabel, { color: p.ink3, marginTop: 10 }]}>TYPE</Text>
+              <TextInput value={addType} onChangeText={setAddType} placeholder="Excavator" placeholderTextColor={p.ink3} style={[styles.input, { backgroundColor: p.card2, borderColor: p.line, color: p.ink }]} />
+            </View>
+          </View>
+          <Text style={[styles.miniLabel, { color: p.ink3, marginTop: 10 }]}>ASSIGN TO SITE</Text>
+          <View style={styles.wrap}>
+            {sites.map((s) => (
+              <Pressable
+                key={s.id}
+                onPress={() => setAddSite(s)}
+                style={[styles.pchip, { borderColor: p.line, backgroundColor: addSite?.id === s.id ? p.accent : p.card2 }]}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '600', color: addSite?.id === s.id ? '#fff' : p.ink2 }}>{s.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <PrimaryButton title="Register Equipment" onPress={submitEquipment} loading={adding} style={{ marginTop: 12 }} />
+        </Card>
+      )}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 14, marginBottom: 14 }}>
         <View style={{ flexDirection: 'row', gap: 7 }}>
@@ -147,7 +259,7 @@ export default function EquipmentScreen() {
           const c = chipColors(meta.key);
           const expanded = expandedId === e.id;
           return (
-            <Pressable key={e.id} onPress={() => setExpandedId(expanded ? null : e.id)}>
+            <Pressable key={e.id} onPress={() => canEditState && setExpandedId(expanded ? null : e.id)}>
               <Card style={{ marginBottom: 8 }}>
                 <View style={styles.item}>
                   <View style={[styles.icon, { backgroundColor: p.track }]}>
@@ -209,6 +321,17 @@ const styles = StyleSheet.create({
   item: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   stateRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
   stateBtn: { borderRadius: 100, paddingVertical: 7, paddingHorizontal: 13 },
+  miniLabel: { fontSize: 10, letterSpacing: 1.2, fontWeight: '700', marginBottom: 6 },
+  input: {
+    borderWidth: 1,
+    borderRadius: 11,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 2 },
+  pchip: { borderWidth: 1, borderRadius: 100, paddingVertical: 7, paddingHorizontal: 12 },
   icon: {
     width: 42,
     height: 42,
