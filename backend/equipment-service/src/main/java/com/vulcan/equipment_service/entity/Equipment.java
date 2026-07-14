@@ -1,5 +1,6 @@
 package com.vulcan.equipment_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -26,6 +27,14 @@ public class Equipment {
     private LocalDateTime registeredAt;
     private LocalDateTime updatedAt;
 
+    // Photo proof of the asset's condition (base64 data URI). Kept out of list
+    // responses to avoid bloat — fetched on demand via /{id}/proof.
+    @Column(columnDefinition = "TEXT")
+    @JsonIgnore
+    private String proofImage;
+
+    private LocalDateTime proofUpdatedAt;
+
     @PrePersist
     public void prePersist() {
         this.registeredAt = LocalDateTime.now();
@@ -51,4 +60,13 @@ public class Equipment {
     public void setState(EquipmentState state) { this.state = state; }
     public LocalDateTime getRegisteredAt() { return registeredAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    @JsonIgnore
+    public String getProofImage() { return proofImage; }
+    public void setProofImage(String proofImage) { this.proofImage = proofImage; }
+    public LocalDateTime getProofUpdatedAt() { return proofUpdatedAt; }
+    public void setProofUpdatedAt(LocalDateTime proofUpdatedAt) { this.proofUpdatedAt = proofUpdatedAt; }
+
+    // Serialized as "hasProof" so clients can show a proof badge without downloading the image.
+    public boolean isHasProof() { return proofImage != null && !proofImage.isBlank(); }
 }

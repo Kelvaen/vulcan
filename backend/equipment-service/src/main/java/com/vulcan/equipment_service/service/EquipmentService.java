@@ -46,7 +46,17 @@ public class EquipmentService {
 
         Equipment equipment = equipmentOpt.get();
         equipment.setState(request.getState());
+        if (request.getProofImage() != null && !request.getProofImage().isBlank()) {
+            equipment.setProofImage(request.getProofImage());
+            equipment.setProofUpdatedAt(java.time.LocalDateTime.now());
+        }
         equipmentRepository.save(equipment);
         return "Equipment state updated to " + request.getState();
+    }
+
+    public String getProof(Long equipmentId) {
+        return equipmentRepository.findById(equipmentId)
+                .map(Equipment::getProofImage)
+                .orElse(null);
     }
 }

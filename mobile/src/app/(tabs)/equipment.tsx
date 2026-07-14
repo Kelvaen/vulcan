@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card, Notice, PrimaryButton, StatusChip } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
 import {
   createEquipment,
   getEquipment,
+  getEquipmentProof,
   getSites,
   getWorkerSite,
   updateEquipmentState,
@@ -14,6 +15,7 @@ import {
   type EquipmentState,
   type Site,
 } from '../../lib/api';
+import { pickImageDataUri } from '../../lib/photo';
 
 const STATE_META: Record<EquipmentState, { label: string; key: 'good' | 'warn' | 'serious' | 'critical' | 'neutral' }> = {
   AVAILABLE: { label: 'Available', key: 'good' },
@@ -48,6 +50,7 @@ export default function EquipmentScreen() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [mySiteId, setMySiteId] = useState<number | null>(null);
+  const [proofUri, setProofUri] = useState<Record<number, string>>({}); // id -> viewed proof data URI
 
   // admin add-equipment form
   const [sites, setSites] = useState<Site[]>([]);
@@ -76,6 +79,39 @@ export default function EquipmentScreen() {
     } finally {
       setSavingId(null);
     }
+  }
+
+  async function attachProof(item: Equipment) {
+    if (!session || savingId) return;
+    const dataUri = await pickImageDataUri('camera');
+    if (!dataUri) return;
+    setSavingId(item.id);
+    setNotice({ text: '', tone: 'good' });
+    try {
+      // Same state, but carry the photo proof so the admin can see the condition.
+      await updateEquipmentState(session.token, item.id, item.state, dataUri);
+      setProofUri((m) => ({ ...m, [item.id]: dataUri }));
+      setItems((list) => list.map((x) => (x.id === item.id ? { ...x, hasProof: true } : x)));
+      setNotice({ text: `Photo proof saved for ${item.name}`, tone: 'good' });
+    } catch (e: any) {
+      setNotice({ text: e?.message ?? 'Could not save proof', tone: 'error' });
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function viewProof(item: Equipment) {
+    if (!session) return;
+    if (proofUri[item.id]) {
+      setProofUri((m) => {
+        const next = { ...m };
+        delete next[item.id];
+        return next;
+      });
+      return;
+    }
+    const uri = await getEquipmentProof(session.token, item.id);
+    if (uri) setProofUri((m) => ({ ...m, [item.id]: uri }));
   }
 
   const load = useCallback(async () => {
@@ -295,6 +331,41 @@ export default function EquipmentScreen() {
                           </Pressable>
                         );
                       })}
+                    <Text style={{ fontSize: 10, letterSpacing: 1.2, fontWeight: '700', color: p.ink3, width: '100%', marginTop: 6 }}>
+                      PHOTO PROOF
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 7, width: '100%' }}>
+                      <Pressable
+                        disabled={savingId === e.id}
+                        onPress={() => attachProof(e)}
+                        style={[styles.proofBtn, { borderColor: p.line, opacity: savingId === e.id ? 0.5 : 1 }]}
+                      >
+                        <Ionicons name="camera-outline" size={14} color={p.ink2} />
+                        <Text style={{ fontSize: 11.5, fontWeight: '700', color: p.ink2 }}>
+                          {e.hasProof ? 'Update photo' : 'Add photo'}
+                        </Text>
+                      </Pressable>
+                      {(e.hasProof || proofUri[e.id]) && (
+                        <Pressable
+                          onPress={() => viewProof(e)}
+                          style={[styles.proofBtn, { borderColor: p.line }]}
+                        >
+                          <Ionicons name={proofUri[e.id] ? 'eye-off-outline' : 'eye-outline'} size={14} color={p.accent} />
+                          <Text style={{ fontSize: 11.5, fontWeight: '700', color: p.accent }}>
+                            {proofUri[e.id] ? 'Hide' : 'View proof'}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                    {proofUri[e.id] && (
+                      <Image source={{ uri: proofUri[e.id] }} style={styles.proofImg} resizeMode="cover" />
+                    )}
+                  </View>
+                )}
+                {!canEditState && e.hasProof && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 }}>
+                    <Ionicons name="camera" size={12} color={p.ink3} />
+                    <Text style={{ fontSize: 10.5, color: p.ink3 }}>Photo proof on file</Text>
                   </View>
                 )}
               </Card>
@@ -332,6 +403,16 @@ const styles = StyleSheet.create({
   },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 2 },
   pchip: { borderWidth: 1, borderRadius: 100, paddingVertical: 7, paddingHorizontal: 12 },
+  proofBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 100,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+  },
+  proofImg: { width: '100%', height: 160, borderRadius: 12, marginTop: 10 },
   icon: {
     width: 42,
     height: 42,
