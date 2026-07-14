@@ -43,6 +43,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="team"
+        options={{
+          title: 'Team',
+          href: isSupervisor ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="report"
         options={{
           title: 'Report',
