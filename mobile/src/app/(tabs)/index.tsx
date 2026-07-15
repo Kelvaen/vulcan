@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Card, Notice, PrimaryButton, SectionLabel } from '../../components/ui';
@@ -78,6 +78,9 @@ export default function Home() {
   const mm = String(now.getMinutes()).padStart(2, '0');
   const ss = String(now.getSeconds()).padStart(2, '0');
   const greeting = now.getHours() < 12 ? 'Morning,' : now.getHours() < 17 ? 'Afternoon,' : 'Evening,';
+
+  // Home is only for field staff. Admins/managers who land on "/" go to their dashboard.
+  if (session && !isFieldStaff) return <Redirect href="/dashboard" />;
 
   async function handleClock() {
     if (!session || workerId == null || !site) return;
