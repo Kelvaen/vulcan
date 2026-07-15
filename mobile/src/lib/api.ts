@@ -432,6 +432,15 @@ export async function getSurveysByStatus(token: string, status: Survey['status']
   return res.json();
 }
 
+/** Admin view: every report across all statuses, newest first. */
+export async function getAllSurveys(token: string): Promise<Survey[]> {
+  const statuses: Survey['status'][] = ['SUBMITTED', 'VERIFIED', 'MISMATCH', 'PENALIZED'];
+  const lists = await Promise.all(
+    statuses.map((s) => getSurveysByStatus(token, s).catch(() => [] as Survey[])),
+  );
+  return lists.flat().sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+}
+
 export async function verifySurvey(
   token: string,
   surveyId: number,

@@ -18,9 +18,11 @@ public class SiteSurvey {
     @Column(nullable = false)
     private Long foremanId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String reportText;
 
+    // Holds either a URL or a base64 data URI of the daily-report photo.
+    @Column(columnDefinition = "TEXT")
     private String photoUrl;
 
     private LocalDate surveyDate;
