@@ -55,8 +55,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="report"
         options={{
-          title: 'Report',
-          href: isSupervisor ? undefined : null,
+          title: 'Reports',
+          href: isSupervisor || isAdmin ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="clipboard-outline" size={size} color={color} />
           ),
