@@ -19,6 +19,7 @@ function RootStack() {
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="register" />
         <Stack.Screen name="profile" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="notifications" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );

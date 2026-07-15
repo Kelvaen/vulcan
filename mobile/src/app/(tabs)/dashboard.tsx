@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -59,6 +60,13 @@ export default function Dashboard() {
             {session?.role ?? ''}
           </Text>
         </View>
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          style={[styles.iconBtn, { backgroundColor: p.card, borderColor: p.line }]}
+          accessibilityLabel="Notifications"
+        >
+          <Ionicons name="notifications-outline" size={18} color={p.ink2} />
+        </Pressable>
         <Pressable
           onPress={() => router.push('/profile')}
           style={[styles.avatar, { backgroundColor: p.avatar, borderColor: p.line }]}
@@ -159,6 +167,15 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
