@@ -55,7 +55,7 @@ export default function RollCall() {
 
   useEffect(() => {
     if (!session || mode !== 'enroll' || workers.length > 0) return;
-    getActiveUsers(session.token)
+    getActiveUsers(session.token, session.companyId)
       .then((users) => setWorkers(users.filter((u) => u.role === 'WORKER' || u.role === 'SUPERVISOR')))
       .catch((e) => setNotice({ text: e?.message ?? 'Could not load workers', tone: 'error' }));
     // eslint-disable-next-line react-hooks/exhaustive-deps

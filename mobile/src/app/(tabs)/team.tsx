@@ -54,7 +54,7 @@ export default function Team() {
       }
       const [roster, users] = await Promise.all([
         getSiteWorkers(session.token, mySite.id),
-        getActiveUsers(session.token),
+        getActiveUsers(session.token, session.companyId),
       ]);
       const workerIds = [...new Set(roster.map((r) => r.workerId))];
       const crew = users.filter((u) => workerIds.includes(u.id) && u.role === 'WORKER');
