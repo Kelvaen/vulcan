@@ -127,10 +127,16 @@ export default function Home() {
           <Text style={{ fontSize: 12, color: p.ink3 }}>{greeting}</Text>
           <Text style={{ fontSize: 17, fontWeight: '700', color: p.ink }}>{displayName}</Text>
         </View>
-        <View style={[styles.bell, { backgroundColor: p.card, borderColor: p.line }]}>
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          style={[styles.bell, { backgroundColor: p.card, borderColor: p.line }]}
+          accessibilityLabel="Notifications"
+        >
           <Ionicons name="notifications-outline" size={18} color={p.ink2} />
-          <View style={[styles.bellDot, { backgroundColor: p.accent }]} />
-        </View>
+          {tasks.some((t) => t.status !== 'COMPLETED') && (
+            <View style={[styles.bellDot, { backgroundColor: p.accent }]} />
+          )}
+        </Pressable>
       </View>
 
       {!isFieldStaff && (
