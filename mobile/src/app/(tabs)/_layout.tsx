@@ -98,6 +98,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="payroll"
+        options={{
+          title: 'Payroll',
+          href: seesDashboard ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Ionicons name="cash-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="sites"
         options={{
           title: 'Sites',
