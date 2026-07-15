@@ -140,7 +140,7 @@ export async function getWorkerSite(token: string, workerId: number): Promise<Si
         headers: authed(token),
       });
       if (!res.ok) continue;
-      const assignments: Array<{ workerId: number }> = await res.json();
+      const assignments: { workerId: number }[] = await res.json();
       if (assignments.some((a) => a.workerId === workerId)) return site;
     } catch {
       /* keep scanning */

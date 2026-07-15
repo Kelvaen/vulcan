@@ -136,7 +136,7 @@ export default function Team() {
         <Card style={{ alignItems: 'center', paddingVertical: 24, marginTop: 14 }}>
           <Ionicons name="alert-circle-outline" size={24} color={p.warnText} />
           <Text style={{ fontSize: 12.5, color: p.ink3, marginTop: 8, textAlign: 'center' }}>
-            You're not assigned to a site yet.{'\n'}Ask your admin to assign you.
+            {"You're not assigned to a site yet.\nAsk your admin to assign you."}
           </Text>
         </Card>
       )}

@@ -83,7 +83,7 @@ export default function Register() {
                 lineHeight: 19,
               }}
             >
-              Your account is awaiting admin approval.{'\n'}You can sign in once it's approved.
+              {"Your account is awaiting admin approval.\nYou can sign in once it's approved."}
             </Text>
           </View>
         ) : (
