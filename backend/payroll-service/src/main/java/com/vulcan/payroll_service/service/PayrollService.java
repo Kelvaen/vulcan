@@ -17,13 +17,16 @@ public class PayrollService {
 
     private final PayrollRepository payrollRepository;
     private final RestTemplate restTemplate;
+    private final PaystackTransferService paystackTransferService;
 
     @Value("${services.attendance.url}")
     private String attendanceServiceUrl;
 
-    public PayrollService(PayrollRepository payrollRepository, RestTemplate restTemplate) {
+    public PayrollService(PayrollRepository payrollRepository, RestTemplate restTemplate,
+                          PaystackTransferService paystackTransferService) {
         this.payrollRepository = payrollRepository;
         this.restTemplate = restTemplate;
+        this.paystackTransferService = paystackTransferService;
     }
 
     public String createPayroll(CreatePayrollRequest request) {
@@ -85,6 +88,30 @@ public class PayrollService {
         if (recordOpt.isEmpty()) return "Payroll record not found";
 
         PayrollRecord record = recordOpt.get();
+        if (record.getStatus() == PayrollStatus.PAID) {
+            return "Payroll already paid";
+        }
+
+        // Mobile-money methods are paid out through Paystack; bank/cheque are settled manually.
+        boolean isMomo = PaystackTransferService.bankCode(record.getPaymentMethod()) != null;
+        if (isMomo && record.getMomoNumber() != null && !record.getMomoNumber().isBlank()) {
+            String name = record.getAccountName() != null && !record.getAccountName().isBlank()
+                    ? record.getAccountName()
+                    : "Worker " + record.getWorkerId();
+            PaystackTransferService.Result result = paystackTransferService.payout(
+                    name, record.getMomoNumber(), record.getPaymentMethod(),
+                    record.getAmount() == null ? 0 : record.getAmount());
+            if (!result.success) {
+                record.setStatus(PayrollStatus.FAILED);
+                payrollRepository.save(record);
+                return "Mobile money payout failed: " + result.message;
+            }
+            record.setStatus(PayrollStatus.PAID);
+            record.setProcessedDate(LocalDate.now());
+            payrollRepository.save(record);
+            return "Paid to mobile money — " + result.message;
+        }
+
         record.setStatus(PayrollStatus.PAID);
         record.setProcessedDate(LocalDate.now());
         payrollRepository.save(record);

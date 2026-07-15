@@ -337,6 +337,33 @@ export async function getWorkerPayroll(token: string, workerId: number): Promise
   return res.json();
 }
 
+export interface PayrollRecord {
+  id: number;
+  workerId: number;
+  payPeriod: string;
+  amount: number | null;
+  daysWorked: number | null;
+  paymentMethod: string;
+  momoNumber: string | null;
+  momoNetwork: string | null;
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'EXCLUDED_GHOST_WORKER';
+}
+
+export async function getPayrollByPeriod(token: string, payPeriod: string): Promise<PayrollRecord[]> {
+  const res = await fetch(`${API.payroll}/api/payroll/period/${payPeriod}`, { headers: authed(token) });
+  if (!res.ok) throw new Error(`Payroll failed (${res.status})`);
+  return res.json();
+}
+
+/** Trigger payment for a record. Mobile-money methods are paid out via Paystack. */
+export async function payPayroll(token: string, payrollId: number): Promise<string> {
+  const res = await fetch(`${API.payroll}/api/payroll/${payrollId}/pay`, {
+    method: 'PUT',
+    headers: authed(token),
+  });
+  return res.text();
+}
+
 export async function submitSurvey(
   token: string,
   body: { siteId: number; foremanId: number; reportText: string; photoUrl: string },
