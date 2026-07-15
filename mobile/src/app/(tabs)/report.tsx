@@ -185,7 +185,7 @@ export default function Report() {
             >
               <Ionicons name="camera-outline" size={26} color={p.ink3} />
               <Text style={{ fontSize: 12, color: p.ink3, marginTop: 6 }}>
-                Take a photo of the site's condition
+                {"Take a photo of the site's condition"}
               </Text>
             </Pressable>
           )}

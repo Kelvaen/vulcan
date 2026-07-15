@@ -123,7 +123,7 @@ export default function Notifications() {
       {loaded && items.length === 0 && (
         <Card style={{ alignItems: 'center', paddingVertical: 30 }}>
           <Ionicons name="notifications-off-outline" size={26} color={p.ink3} />
-          <Text style={{ fontSize: 13, color: p.ink3, marginTop: 10 }}>You're all caught up.</Text>
+          <Text style={{ fontSize: 13, color: p.ink3, marginTop: 10 }}>{"You're all caught up."}</Text>
         </Card>
       )}
 

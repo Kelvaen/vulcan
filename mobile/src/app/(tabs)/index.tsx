@@ -220,14 +220,14 @@ export default function Home() {
                     lineHeight: 18,
                   }}
                 >
-                  You're not assigned to a site yet.{'\n'}Ask your admin to assign you before clocking in.
+                  {"You're not assigned to a site yet.\nAsk your admin to assign you before clocking in."}
                 </Text>
               )
             )}
             <Notice text={notice.text} tone={notice.tone} />
           </Card>
 
-          <SectionLabel>Today's tasks · {tasks.length}</SectionLabel>
+          <SectionLabel>{`Today's tasks · ${tasks.length}`}</SectionLabel>
           {tasksLoaded && tasks.length === 0 && (
         <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
           <Ionicons name="cafe-outline" size={22} color={p.ink3} />
