@@ -18,12 +18,16 @@ public class JwtService {
     }
 
     public String generateToken(String email, String role) {
-        return generateToken(email, role, null, null);
+        return generateToken(email, role, null, null, null);
     }
 
-    // userId/fullName ride along as claims so clients know who logged in
-    // without an extra round-trip. Older callers keep working.
     public String generateToken(String email, String role, Long userId, String fullName) {
+        return generateToken(email, role, userId, fullName, null);
+    }
+
+    // userId/fullName/companyId ride along as claims so clients know who logged
+    // in (and which company) without an extra round-trip. Older callers keep working.
+    public String generateToken(String email, String role, Long userId, String fullName, Long companyId) {
         var builder = Jwts.builder()
                 .subject(email)
                 .claim("role", role)
@@ -31,6 +35,7 @@ public class JwtService {
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION));
         if (userId != null) builder.claim("userId", userId);
         if (fullName != null) builder.claim("fullName", fullName);
+        if (companyId != null) builder.claim("companyId", companyId);
         return builder.signWith(getKey()).compact();
     }
 
