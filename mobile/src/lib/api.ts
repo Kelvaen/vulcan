@@ -118,6 +118,52 @@ export async function getCompany(token: string, companyId: number): Promise<Comp
   return res.json();
 }
 
+// ---------- premium upgrade (Paystack) ----------
+export interface PremiumPrice {
+  amount: number; // smallest currency unit, e.g. pesewas
+  currency: string;
+  mock: boolean;
+}
+
+export async function getPremiumPrice(token: string): Promise<PremiumPrice> {
+  const res = await fetch(`${API.auth}/api/companies/premium-price`, { headers: authed(token) });
+  if (!res.ok) throw new Error(`Price failed (${res.status})`);
+  return res.json();
+}
+
+export interface UpgradeInit {
+  reference: string;
+  authorizationUrl: string;
+  mock: boolean;
+  amount: number;
+  currency: string;
+  alreadyPremium?: boolean;
+}
+
+export async function upgradeInit(token: string, companyId: number, email: string): Promise<UpgradeInit> {
+  const res = await fetch(`${API.auth}/api/companies/${companyId}/upgrade/init`, {
+    method: 'POST',
+    headers: authed(token),
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error(`Upgrade init failed (${res.status})`);
+  return res.json();
+}
+
+export async function upgradeVerify(
+  token: string,
+  companyId: number,
+  reference: string,
+): Promise<{ success: boolean; message: string; company?: CompanyInfo }> {
+  const res = await fetch(`${API.auth}/api/companies/${companyId}/upgrade/verify`, {
+    method: 'POST',
+    headers: authed(token),
+    body: JSON.stringify({ reference }),
+  });
+  if (!res.ok) throw new Error(`Upgrade verify failed (${res.status})`);
+  return res.json();
+}
+
 function authed(token: string): Record<string, string> {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
