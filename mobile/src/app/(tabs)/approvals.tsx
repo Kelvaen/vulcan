@@ -19,7 +19,7 @@ export default function Approvals() {
 
   const load = useCallback(() => {
     if (!session) return;
-    getPendingUsers(session.token)
+    getPendingUsers(session.token, session.companyId)
       .then(setPending)
       .catch((e) => setNotice({ text: e?.message ?? 'Could not load queue', tone: 'error' }))
       .finally(() => setLoaded(true));

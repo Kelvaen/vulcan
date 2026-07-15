@@ -40,6 +40,20 @@ export default function Profile() {
         </View>
       </Pressable>
 
+      {session?.companyId != null && (
+        <Pressable
+          onPress={() => {
+            router.back();
+            router.push('/company');
+          }}
+          style={[styles.row, { backgroundColor: p.card2, borderColor: p.line }]}
+        >
+          <Ionicons name="business-outline" size={18} color={p.ink2} />
+          <Text style={{ fontSize: 14, fontWeight: '600', color: p.ink }}>Company & Plan</Text>
+          <Ionicons name="chevron-forward" size={16} color={p.ink3} style={{ marginLeft: 'auto' }} />
+        </Pressable>
+      )}
+
       <View style={[styles.row, { backgroundColor: p.card2, borderColor: p.line }]}>
         <Ionicons name="checkmark" size={18} color={p.good} />
         <View style={{ flex: 1 }}>

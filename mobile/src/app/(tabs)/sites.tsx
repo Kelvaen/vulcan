@@ -41,7 +41,10 @@ export default function Sites() {
   const load = useCallback(async () => {
     if (!session) return;
     try {
-      const [s, u] = await Promise.all([getSites(session.token), getActiveUsers(session.token)]);
+      const [s, u] = await Promise.all([
+        getSites(session.token),
+        getActiveUsers(session.token, session.companyId),
+      ]);
       setSites(s);
       setUsers(u.filter((x) => x.role === 'WORKER' || x.role === 'SUPERVISOR'));
       const map: Record<number, number[]> = {};

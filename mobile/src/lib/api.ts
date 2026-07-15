@@ -35,18 +35,25 @@ export interface Session {
   role: Role;
   userId: number | null;
   fullName: string | null;
+  companyId: number | null;
 }
 
-function decodeJwt(token: string): { role: Role; userId: number | null; fullName: string | null } {
+function decodeJwt(token: string): {
+  role: Role;
+  userId: number | null;
+  fullName: string | null;
+  companyId: number | null;
+} {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     return {
       role: (payload.role ?? 'WORKER') as Role,
       userId: typeof payload.userId === 'number' ? payload.userId : null,
       fullName: typeof payload.fullName === 'string' ? payload.fullName : null,
+      companyId: typeof payload.companyId === 'number' ? payload.companyId : null,
     };
   } catch {
-    return { role: 'WORKER', userId: null, fullName: null };
+    return { role: 'WORKER', userId: null, fullName: null, companyId: null };
   }
 }
 
@@ -71,6 +78,7 @@ export async function register(input: {
   password: string;
   phoneNumber: string;
   role: Role;
+  joinCode: string;
 }): Promise<string> {
   const res = await fetch(`${API.auth}/api/auth/register`, {
     method: 'POST',
@@ -78,6 +86,36 @@ export async function register(input: {
     body: JSON.stringify(input),
   });
   return res.text();
+}
+
+/** Create a new company and its first (owner) admin. */
+export async function registerCompany(input: {
+  companyName: string;
+  fullName: string;
+  email: string;
+  password: string;
+  phoneNumber: string;
+}): Promise<string> {
+  const res = await fetch(`${API.auth}/api/auth/register-company`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return res.text();
+}
+
+export interface CompanyInfo {
+  id: number;
+  name: string;
+  joinCode: string;
+  plan: 'FREE' | 'PREMIUM';
+  usage: Record<Role, { active: number; limit: number }>;
+}
+
+export async function getCompany(token: string, companyId: number): Promise<CompanyInfo> {
+  const res = await fetch(`${API.auth}/api/companies/${companyId}`, { headers: authed(token) });
+  if (!res.ok) throw new Error(`Company failed (${res.status})`);
+  return res.json();
 }
 
 function authed(token: string): Record<string, string> {
@@ -329,8 +367,9 @@ export interface PendingUser {
   status: string;
 }
 
-export async function getPendingUsers(token: string): Promise<PendingUser[]> {
-  const res = await fetch(`${API.auth}/api/admin/pending`, { headers: authed(token) });
+export async function getPendingUsers(token: string, companyId?: number | null): Promise<PendingUser[]> {
+  const q = companyId != null ? `?companyId=${companyId}` : '';
+  const res = await fetch(`${API.auth}/api/admin/pending${q}`, { headers: authed(token) });
   if (!res.ok) throw new Error(`Pending list failed (${res.status})`);
   return res.json();
 }
@@ -359,8 +398,9 @@ export interface ActiveUser {
   role: Role;
 }
 
-export async function getActiveUsers(token: string): Promise<ActiveUser[]> {
-  const res = await fetch(`${API.auth}/api/admin/users`, { headers: authed(token) });
+export async function getActiveUsers(token: string, companyId?: number | null): Promise<ActiveUser[]> {
+  const q = companyId != null ? `?companyId=${companyId}` : '';
+  const res = await fetch(`${API.auth}/api/admin/users${q}`, { headers: authed(token) });
   if (!res.ok) throw new Error(`User list failed (${res.status})`);
   return res.json();
 }

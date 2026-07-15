@@ -57,7 +57,7 @@ export default function Notifications() {
         }
         if (role === 'ADMIN') {
           const [pending, subs] = await Promise.all([
-            getPendingUsers(session.token).catch(() => []),
+            getPendingUsers(session.token, session.companyId).catch(() => []),
             getSurveysByStatus(session.token, 'SUBMITTED').catch(() => []),
           ]);
           pending.forEach((u) =>
