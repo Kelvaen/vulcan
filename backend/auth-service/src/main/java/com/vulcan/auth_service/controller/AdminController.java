@@ -25,12 +25,12 @@ public class AdminController {
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<?> getPendingUsers() {
-        return ResponseEntity.ok(adminService.getPendingUsers());
+    public ResponseEntity<?> getPendingUsers(@RequestParam(required = false) Long companyId) {
+        return ResponseEntity.ok(adminService.getPendingUsers(companyId));
     }
 
     @GetMapping("/users")
-    public ResponseEntity<?> getActiveUsers() {
-        return ResponseEntity.ok(adminService.getActiveUsers());
+    public ResponseEntity<?> getActiveUsers(@RequestParam(required = false) Long companyId) {
+        return ResponseEntity.ok(adminService.getActiveUsers(companyId));
     }
 }

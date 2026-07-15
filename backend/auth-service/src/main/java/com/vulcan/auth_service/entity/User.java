@@ -30,6 +30,7 @@ public class User {
 
     private String phoneNumber;
     private String faceImageUrl;
+    private Long companyId;
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -44,6 +45,7 @@ public class User {
         private String fullName, email, password, phoneNumber, faceImageUrl;
         private Role role;
         private Status status;
+        private Long companyId;
 
         public UserBuilder fullName(String v) { this.fullName = v; return this; }
         public UserBuilder email(String v) { this.email = v; return this; }
@@ -52,6 +54,7 @@ public class User {
         public UserBuilder faceImageUrl(String v) { this.faceImageUrl = v; return this; }
         public UserBuilder role(Role v) { this.role = v; return this; }
         public UserBuilder status(Status v) { this.status = v; return this; }
+        public UserBuilder companyId(Long v) { this.companyId = v; return this; }
 
         public User build() {
             User u = new User();
@@ -62,6 +65,7 @@ public class User {
             u.faceImageUrl = this.faceImageUrl;
             u.role = this.role;
             u.status = this.status;
+            u.companyId = this.companyId;
             return u;
         }
     }
@@ -82,5 +86,7 @@ public class User {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public String getFaceImageUrl() { return faceImageUrl; }
     public void setFaceImageUrl(String faceImageUrl) { this.faceImageUrl = faceImageUrl; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

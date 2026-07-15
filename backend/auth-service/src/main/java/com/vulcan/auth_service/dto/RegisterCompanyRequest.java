@@ -1,11 +1,13 @@
 package com.vulcan.auth_service.dto;
 
-import com.vulcan.auth_service.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
-public class RegisterRequest {
+// Creates a new company plus its first (owner) admin.
+public class RegisterCompanyRequest {
+
+    @NotBlank(message = "Company name is required")
+    private String companyName;
 
     @NotBlank(message = "Full name is required")
     private String fullName;
@@ -19,14 +21,8 @@ public class RegisterRequest {
 
     private String phoneNumber;
 
-    @NotNull(message = "Role is required")
-    private Role role;
-
-    @NotBlank(message = "Company join code is required")
-    private String joinCode;
-
-    public String getJoinCode() { return joinCode; }
-    public void setJoinCode(String joinCode) { this.joinCode = joinCode; }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getEmail() { return email; }
@@ -35,6 +31,4 @@ public class RegisterRequest {
     public void setPassword(String password) { this.password = password; }
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
 }
