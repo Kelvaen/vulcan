@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import SiteBackdrop from '../../components/SiteBackdrop';
 import { Card } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
@@ -44,10 +45,12 @@ export default function Dashboard() {
   ];
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: p.screen }}
-      contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 40 }}
-    >
+    <View style={{ flex: 1, backgroundColor: p.screen }}>
+      <SiteBackdrop opacity={0.05} height={170} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 40 }}
+      >
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 22, fontWeight: '800', color: p.ink }}>Site Analytics</Text>
@@ -157,7 +160,8 @@ export default function Dashboard() {
           ))
         )}
       </Card>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

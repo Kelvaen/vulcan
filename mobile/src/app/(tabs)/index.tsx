@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import SiteBackdrop from '../../components/SiteBackdrop';
 import { Card, Notice, PrimaryButton, SectionLabel } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
@@ -115,10 +116,12 @@ export default function Home() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: p.screen }}
-      contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 40 }}
-    >
+    <View style={{ flex: 1, backgroundColor: p.screen }}>
+      <SiteBackdrop opacity={0.05} height={170} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 40 }}
+      >
       <View style={styles.header}>
         <Pressable
           onPress={() => router.push('/profile')}
@@ -287,7 +290,8 @@ export default function Home() {
           </View>
         </>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
