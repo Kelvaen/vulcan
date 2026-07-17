@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import SiteBackdrop from '../components/SiteBackdrop';
 import { PrimaryButton, Notice } from '../components/ui';
 import { landingFor, useAuth } from '../context/auth';
 import { useTheme } from '../context/theme';
@@ -57,6 +58,7 @@ export default function SignIn() {
       style={{ flex: 1, backgroundColor: p.screen }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <SiteBackdrop opacity={0.09} height={230} />
       <Pressable
         onPress={toggle}
         style={[styles.themeFab, { borderColor: p.line, backgroundColor: p.card }]}

@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import SiteBackdrop from '../components/SiteBackdrop';
 import { Notice, PrimaryButton } from '../components/ui';
 import { useTheme } from '../context/theme';
 import { register, registerCompany, type Role } from '../lib/api';
@@ -89,6 +90,7 @@ export default function Register() {
       style={{ flex: 1, backgroundColor: p.screen }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <SiteBackdrop opacity={0.07} height={200} />
       <ScrollView
         contentContainerStyle={styles.body}
         keyboardShouldPersistTaps="handled"
