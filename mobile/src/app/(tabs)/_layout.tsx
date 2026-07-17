@@ -118,10 +118,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="approvals"
         options={{
-          title: 'Approvals',
+          title: 'People',
           href: isAdmin ? undefined : null,
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-add-outline" size={size} color={color} />
+            <Ionicons name="people-circle-outline" size={size} color={color} />
           ),
         }}
       />

@@ -24,6 +24,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.rejectUser(userId));
     }
 
+    @PutMapping("/remove/{userId}")
+    public ResponseEntity<String> removeUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(adminService.removeUser(userId));
+    }
+
     @GetMapping("/pending")
     public ResponseEntity<?> getPendingUsers(@RequestParam(required = false) Long companyId) {
         return ResponseEntity.ok(adminService.getPendingUsers(companyId));
