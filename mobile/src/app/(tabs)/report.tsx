@@ -1,6 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { Card, Notice, PrimaryButton, SectionLabel } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
@@ -51,24 +61,43 @@ export default function Report() {
   const [actingId, setActingId] = useState<number | null>(null);
   const [archive, setArchive] = useState<Survey[]>([]);
   const [archiveLoaded, setArchiveLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // The admin's only view is the archive; correct the mode if the screen
+  // mounted before the session (and therefore the role) was known.
   useEffect(() => {
+    if (isAdmin && mode !== 'archive') setMode('archive');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+
+  const load = useCallback(async () => {
     if (!session) return;
     if (mode === 'review') {
-      setQueueLoaded(false);
-      getSurveysByStatus(session.token, 'SUBMITTED')
-        .then(setQueue)
-        .catch((e) => setNotice({ text: e?.message ?? 'Could not load reports', tone: 'error' }))
-        .finally(() => setQueueLoaded(true));
+      try {
+        setQueue(await getSurveysByStatus(session.token, 'SUBMITTED'));
+      } catch (e: any) {
+        setNotice({ text: e?.message ?? 'Could not load reports', tone: 'error' });
+      } finally {
+        setQueueLoaded(true);
+      }
     } else if (mode === 'archive') {
-      setArchiveLoaded(false);
-      getAllSurveys(session.token)
-        .then(setArchive)
-        .catch((e) => setNotice({ text: e?.message ?? 'Could not load reports', tone: 'error' }))
-        .finally(() => setArchiveLoaded(true));
+      try {
+        setArchive(await getAllSurveys(session.token));
+      } catch (e: any) {
+        setNotice({ text: e?.message ?? 'Could not load reports', tone: 'error' });
+      } finally {
+        setArchiveLoaded(true);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, session?.token]);
+  }, [session, mode]);
+
+  // Refetch every time the tab gains focus, so reports submitted elsewhere
+  // (another phone, another role) show up without restarting the app.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   async function addPhoto() {
     const uri = await pickImageDataUri('camera');
@@ -139,6 +168,16 @@ export default function Report() {
     <ScrollView
       style={{ flex: 1, backgroundColor: p.screen }}
       contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 40 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={async () => {
+            setRefreshing(true);
+            await load();
+            setRefreshing(false);
+          }}
+        />
+      }
     >
       <Text style={{ fontSize: 22, fontWeight: '800', color: p.ink }}>Site Reports</Text>
       <Text style={{ fontSize: 12, color: p.ink3, marginTop: 2, marginBottom: 14 }}>
