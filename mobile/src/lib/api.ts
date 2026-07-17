@@ -463,6 +463,15 @@ export async function rejectUser(token: string, userId: number): Promise<string>
   return res.text();
 }
 
+/** Fire/deactivate an employee — frees their seat and blocks sign-in. */
+export async function removeUser(token: string, userId: number): Promise<string> {
+  const res = await fetch(`${API.auth}/api/admin/remove/${userId}`, {
+    method: 'PUT',
+    headers: authed(token),
+  });
+  return res.text();
+}
+
 // ---------- face enrollment ----------
 export interface ActiveUser {
   id: number;

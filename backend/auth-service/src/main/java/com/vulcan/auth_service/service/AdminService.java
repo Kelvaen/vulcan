@@ -54,6 +54,17 @@ public class AdminService {
         return "User rejected";
     }
 
+    /** Fire/deactivate an employee: they can no longer sign in and their seat is freed.
+     *  Records (attendance, payroll, tasks) are kept for history. */
+    public String removeUser(Long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) return "User not found";
+        User user = userOpt.get();
+        user.setStatus(Status.INACTIVE);
+        userRepository.save(user);
+        return user.getFullName() + " removed from the company";
+    }
+
     public List<User> getPendingUsers(Long companyId) {
         if (companyId == null) return userRepository.findByStatus(Status.PENDING);
         return userRepository.findByCompanyIdAndStatus(companyId, Status.PENDING);
