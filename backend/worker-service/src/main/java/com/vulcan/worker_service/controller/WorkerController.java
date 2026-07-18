@@ -18,13 +18,15 @@ public class WorkerController {
     }
 
     @PostMapping("/sites")
-    public ResponseEntity<?> createSite(@Valid @RequestBody SiteRequest request) {
-        return ResponseEntity.ok(workerService.createSite(request));
+    public ResponseEntity<?> createSite(@Valid @RequestBody SiteRequest request,
+                                        @RequestAttribute(name = "companyId", required = false) Long companyId) {
+        return ResponseEntity.ok(workerService.createSite(request, companyId));
     }
 
     @GetMapping("/sites")
-    public ResponseEntity<?> getAllSites() {
-        return ResponseEntity.ok(workerService.getAllSites());
+    public ResponseEntity<?> getAllSites(
+            @RequestAttribute(name = "companyId", required = false) Long companyId) {
+        return ResponseEntity.ok(workerService.getAllSites(companyId));
     }
 
     @PostMapping("/assign")

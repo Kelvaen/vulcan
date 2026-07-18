@@ -18,13 +18,15 @@ public class EquipmentController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerEquipment(@Valid @RequestBody EquipmentRequest request) {
-        return ResponseEntity.ok(equipmentService.registerEquipment(request));
+    public ResponseEntity<?> registerEquipment(@Valid @RequestBody EquipmentRequest request,
+                                               @RequestAttribute(name = "companyId", required = false) Long companyId) {
+        return ResponseEntity.ok(equipmentService.registerEquipment(request, companyId));
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllEquipment() {
-        return ResponseEntity.ok(equipmentService.getAllEquipment());
+    public ResponseEntity<?> getAllEquipment(
+            @RequestAttribute(name = "companyId", required = false) Long companyId) {
+        return ResponseEntity.ok(equipmentService.getAllEquipment(companyId));
     }
 
     @GetMapping("/site/{siteId}")

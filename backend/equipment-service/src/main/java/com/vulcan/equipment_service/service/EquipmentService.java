@@ -18,7 +18,7 @@ public class EquipmentService {
         this.equipmentRepository = equipmentRepository;
     }
 
-    public String registerEquipment(EquipmentRequest request) {
+    public String registerEquipment(EquipmentRequest request, Long companyId) {
         if (equipmentRepository.findByEquipmentCode(request.getEquipmentCode()).isPresent()) {
             return "Equipment code already exists";
         }
@@ -28,12 +28,15 @@ public class EquipmentService {
         equipment.setName(request.getName());
         equipment.setType(request.getType());
         equipment.setSiteId(request.getSiteId());
+        equipment.setCompanyId(companyId);
         equipmentRepository.save(equipment);
         return "Equipment registered successfully";
     }
 
-    public List<Equipment> getAllEquipment() {
-        return equipmentRepository.findAll();
+    // Scoped to the caller's company; null companyId (e.g. legacy calls) sees all.
+    public List<Equipment> getAllEquipment(Long companyId) {
+        return companyId == null ? equipmentRepository.findAll()
+                : equipmentRepository.findByCompanyId(companyId);
     }
 
     public List<Equipment> getEquipmentBySite(Long siteId) {

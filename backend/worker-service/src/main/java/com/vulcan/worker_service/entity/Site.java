@@ -18,6 +18,7 @@ public class Site {
     private Double gpsLat;
     private Double gpsLng;
     private Double radiusMeters;
+    private Long companyId;
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -37,5 +38,7 @@ public class Site {
     public void setGpsLng(Double gpsLng) { this.gpsLng = gpsLng; }
     public Double getRadiusMeters() { return radiusMeters; }
     public void setRadiusMeters(Double radiusMeters) { this.radiusMeters = radiusMeters; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

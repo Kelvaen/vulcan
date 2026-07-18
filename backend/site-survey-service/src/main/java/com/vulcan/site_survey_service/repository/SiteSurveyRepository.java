@@ -13,5 +13,7 @@ public interface SiteSurveyRepository extends JpaRepository<SiteSurvey, Long> {
     List<SiteSurvey> findBySiteIdAndSurveyDate(Long siteId, LocalDate date);
     List<SiteSurvey> findByForemanId(Long foremanId);
     List<SiteSurvey> findByStatus(SurveyStatus status);
+    List<SiteSurvey> findByStatusAndCompanyId(SurveyStatus status, Long companyId);
+    List<SiteSurvey> findByCompanyIdIsNull();
     long countByForemanIdAndStatus(Long foremanId, SurveyStatus status);
 }

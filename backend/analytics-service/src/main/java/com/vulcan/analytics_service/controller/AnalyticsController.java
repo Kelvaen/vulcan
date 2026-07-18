@@ -16,7 +16,9 @@ public class AnalyticsController {
     }
 
     @GetMapping("/dashboard")
-    public ResponseEntity<DashboardResponse> getDashboard(@RequestParam String payPeriod) {
-        return ResponseEntity.ok(analyticsService.getDashboard(payPeriod));
+    public ResponseEntity<DashboardResponse> getDashboard(
+            @RequestParam String payPeriod,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        return ResponseEntity.ok(analyticsService.getDashboard(payPeriod, authHeader));
     }
 }

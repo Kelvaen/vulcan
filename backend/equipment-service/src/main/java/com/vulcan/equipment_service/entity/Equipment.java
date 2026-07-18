@@ -20,6 +20,7 @@ public class Equipment {
 
     private String type;
     private Long siteId;
+    private Long companyId;
 
     @Enumerated(EnumType.STRING)
     private EquipmentState state;
@@ -56,6 +57,8 @@ public class Equipment {
     public void setType(String type) { this.type = type; }
     public Long getSiteId() { return siteId; }
     public void setSiteId(Long siteId) { this.siteId = siteId; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public EquipmentState getState() { return state; }
     public void setState(EquipmentState state) { this.state = state; }
     public LocalDateTime getRegisteredAt() { return registeredAt; }

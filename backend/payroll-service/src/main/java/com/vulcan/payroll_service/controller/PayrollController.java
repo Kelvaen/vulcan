@@ -17,13 +17,15 @@ public class PayrollController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPayroll(@Valid @RequestBody CreatePayrollRequest request) {
-        return ResponseEntity.ok(payrollService.createPayroll(request));
+    public ResponseEntity<?> createPayroll(@Valid @RequestBody CreatePayrollRequest request,
+                                           @RequestAttribute(name = "companyId", required = false) Long companyId) {
+        return ResponseEntity.ok(payrollService.createPayroll(request, companyId));
     }
 
     @GetMapping("/period/{payPeriod}")
-    public ResponseEntity<?> getPayrollByPeriod(@PathVariable String payPeriod) {
-        return ResponseEntity.ok(payrollService.getPayrollByPeriod(payPeriod));
+    public ResponseEntity<?> getPayrollByPeriod(@PathVariable String payPeriod,
+                                                @RequestAttribute(name = "companyId", required = false) Long companyId) {
+        return ResponseEntity.ok(payrollService.getPayrollByPeriod(payPeriod, companyId));
     }
 
     @GetMapping("/worker/{workerId}")
