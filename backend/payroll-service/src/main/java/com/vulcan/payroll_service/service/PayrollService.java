@@ -29,7 +29,7 @@ public class PayrollService {
         this.paystackTransferService = paystackTransferService;
     }
 
-    public String createPayroll(CreatePayrollRequest request) {
+    public String createPayroll(CreatePayrollRequest request, Long companyId) {
         Optional<PayrollRecord> existing = payrollRepository
                 .findByWorkerIdAndPayPeriod(request.getWorkerId(), request.getPayPeriod());
         if (existing.isPresent()) {
@@ -52,6 +52,7 @@ public class PayrollService {
 
         PayrollRecord record = new PayrollRecord();
         record.setWorkerId(request.getWorkerId());
+        record.setCompanyId(companyId);
         record.setPayPeriod(request.getPayPeriod());
         record.setDaysWorked(daysWorked);
 
@@ -75,8 +76,9 @@ public class PayrollService {
         return "Payroll record created successfully. Days worked: " + daysWorked + ", Amount: " + amount;
     }
 
-    public List<PayrollRecord> getPayrollByPeriod(String payPeriod) {
-        return payrollRepository.findByPayPeriod(payPeriod);
+    public List<PayrollRecord> getPayrollByPeriod(String payPeriod, Long companyId) {
+        return companyId == null ? payrollRepository.findByPayPeriod(payPeriod)
+                : payrollRepository.findByPayPeriodAndCompanyId(payPeriod, companyId);
     }
 
     public List<PayrollRecord> getPayrollForWorker(Long workerId) {

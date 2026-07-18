@@ -15,6 +15,7 @@ public class PayrollRecord {
 
     @Column(nullable = false)
     private Long workerId;
+    private Long companyId;
 
     @Column(nullable = false)
     private String payPeriod; // e.g. "2026-06"
@@ -53,6 +54,8 @@ public class PayrollRecord {
     public Long getId() { return id; }
     public Long getWorkerId() { return workerId; }
     public void setWorkerId(Long workerId) { this.workerId = workerId; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public String getPayPeriod() { return payPeriod; }
     public void setPayPeriod(String payPeriod) { this.payPeriod = payPeriod; }
     public Double getAmount() { return amount; }

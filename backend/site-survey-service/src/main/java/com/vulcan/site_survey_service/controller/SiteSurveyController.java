@@ -19,8 +19,9 @@ public class SiteSurveyController {
     }
 
     @PostMapping
-    public ResponseEntity<?> submitSurvey(@Valid @RequestBody SubmitSurveyRequest request) {
-        return ResponseEntity.ok(siteSurveyService.submitSurvey(request));
+    public ResponseEntity<?> submitSurvey(@Valid @RequestBody SubmitSurveyRequest request,
+                                          @RequestAttribute(name = "companyId", required = false) Long companyId) {
+        return ResponseEntity.ok(siteSurveyService.submitSurvey(request, companyId));
     }
 
     @GetMapping("/site/{siteId}/today")
@@ -34,8 +35,9 @@ public class SiteSurveyController {
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<?> getSurveysByStatus(@PathVariable SurveyStatus status) {
-        return ResponseEntity.ok(siteSurveyService.getSurveysByStatus(status));
+    public ResponseEntity<?> getSurveysByStatus(@PathVariable SurveyStatus status,
+                                                @RequestAttribute(name = "companyId", required = false) Long companyId) {
+        return ResponseEntity.ok(siteSurveyService.getSurveysByStatus(status, companyId));
     }
 
     @PutMapping("/{surveyId}/verify")

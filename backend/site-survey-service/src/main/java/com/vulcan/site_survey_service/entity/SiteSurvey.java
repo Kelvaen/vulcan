@@ -15,6 +15,7 @@ public class SiteSurvey {
 
     @Column(nullable = false)
     private Long siteId;
+    private Long companyId;
 
     @Column(nullable = false)
     private Long foremanId;
@@ -49,6 +50,8 @@ public class SiteSurvey {
     public Long getId() { return id; }
     public Long getSiteId() { return siteId; }
     public void setSiteId(Long siteId) { this.siteId = siteId; }
+    public Long getCompanyId() { return companyId; }
+    public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public Long getForemanId() { return foremanId; }
     public void setForemanId(Long foremanId) { this.foremanId = foremanId; }
     public String getReportText() { return reportText; }

@@ -22,19 +22,21 @@ public class WorkerService {
         this.siteAssignmentRepository = siteAssignmentRepository;
     }
 
-    public String createSite(SiteRequest request) {
+    public String createSite(SiteRequest request, Long companyId) {
         Site site = new Site();
         site.setName(request.getName());
         site.setLocation(request.getLocation());
         site.setGpsLat(request.getGpsLat());
         site.setGpsLng(request.getGpsLng());
         site.setRadiusMeters(request.getRadiusMeters());
+        site.setCompanyId(companyId);
         siteRepository.save(site);
         return "Site created successfully";
     }
 
-    public List<Site> getAllSites() {
-        return siteRepository.findAll();
+    // Scoped to the caller's company; null companyId (e.g. legacy calls) sees all.
+    public List<Site> getAllSites(Long companyId) {
+        return companyId == null ? siteRepository.findAll() : siteRepository.findByCompanyId(companyId);
     }
 
     public String assignWorkerToSite(AssignWorkerRequest request) {

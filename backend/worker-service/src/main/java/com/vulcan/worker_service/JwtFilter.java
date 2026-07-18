@@ -48,6 +48,13 @@ public class JwtFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
 
+            // Expose the caller's company (from the signed token, not the client)
+            // so controllers can scope data per company.
+            Object companyId = claims.get("companyId");
+            if (companyId instanceof Number) {
+                request.setAttribute("companyId", ((Number) companyId).longValue());
+            }
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             email,

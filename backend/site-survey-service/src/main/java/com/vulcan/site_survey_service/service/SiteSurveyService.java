@@ -21,12 +21,13 @@ public class SiteSurveyService {
         this.siteSurveyRepository = siteSurveyRepository;
     }
 
-    public String submitSurvey(SubmitSurveyRequest request) {
+    public String submitSurvey(SubmitSurveyRequest request, Long companyId) {
         SiteSurvey survey = new SiteSurvey();
         survey.setSiteId(request.getSiteId());
         survey.setForemanId(request.getForemanId());
         survey.setReportText(request.getReportText());
         survey.setPhotoUrl(request.getPhotoUrl());
+        survey.setCompanyId(companyId);
         siteSurveyRepository.save(survey);
         return "Survey report submitted successfully";
     }
@@ -39,8 +40,9 @@ public class SiteSurveyService {
         return siteSurveyRepository.findByForemanId(foremanId);
     }
 
-    public List<SiteSurvey> getSurveysByStatus(SurveyStatus status) {
-        return siteSurveyRepository.findByStatus(status);
+    public List<SiteSurvey> getSurveysByStatus(SurveyStatus status, Long companyId) {
+        return companyId == null ? siteSurveyRepository.findByStatus(status)
+                : siteSurveyRepository.findByStatusAndCompanyId(status, companyId);
     }
 
     public String verifySurvey(Long surveyId, VerifySurveyRequest request) {

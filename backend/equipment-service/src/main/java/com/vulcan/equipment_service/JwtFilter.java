@@ -43,6 +43,11 @@ public class JwtFilter extends OncePerRequestFilter {
                 String email = claims.getSubject();
                 String role = claims.get("role", String.class);
 
+                Object companyId = claims.get("companyId");
+                if (companyId instanceof Number) {
+                    request.setAttribute("companyId", ((Number) companyId).longValue());
+                }
+
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 email,

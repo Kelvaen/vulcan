@@ -28,6 +28,11 @@ public class JwtFilter extends OncePerRequestFilter {
                 Claims claims = Jwts.parser().verifyWith(getKey()).build().parseSignedClaims(token).getPayload();
                 String email = claims.getSubject();
                 String role = claims.get("role", String.class);
+
+                Object companyId = claims.get("companyId");
+                if (companyId instanceof Number) {
+                    request.setAttribute("companyId", ((Number) companyId).longValue());
+                }
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
