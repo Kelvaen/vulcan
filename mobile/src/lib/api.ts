@@ -543,9 +543,17 @@ export interface Survey {
   siteId: number;
   foremanId: number;
   reportText: string;
-  photoUrl: string | null;
+  hasPhoto: boolean; // the actual photo is fetched on demand via getSurveyPhoto
   status: 'SUBMITTED' | 'VERIFIED' | 'MISMATCH' | 'PENALIZED';
   createdAt?: string;
+}
+
+/** Fetch a single report's photo (base64 data URI) on demand, or null. */
+export async function getSurveyPhoto(token: string, surveyId: number): Promise<string | null> {
+  const res = await fetch(`${API.survey}/api/surveys/${surveyId}/photo`, { headers: authed(token) });
+  if (res.status === 204 || !res.ok) return null;
+  const data = await res.json();
+  return data?.photoUrl ?? null;
 }
 
 export async function getSurveysByStatus(token: string, status: Survey['status']): Promise<Survey[]> {

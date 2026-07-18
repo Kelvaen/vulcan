@@ -48,4 +48,11 @@ public class SiteSurveyController {
     public ResponseEntity<?> countPenalties(@PathVariable Long foremanId) {
         return ResponseEntity.ok(siteSurveyService.countPenalties(foremanId));
     }
+
+    @GetMapping("/{surveyId}/photo")
+    public ResponseEntity<?> getPhoto(@PathVariable Long surveyId) {
+        String photo = siteSurveyService.getPhoto(surveyId);
+        if (photo == null || !photo.startsWith("data:")) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(java.util.Map.of("photoUrl", photo));
+    }
 }
