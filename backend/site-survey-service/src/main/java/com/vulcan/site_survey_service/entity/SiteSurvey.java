@@ -1,5 +1,6 @@
 package com.vulcan.site_survey_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,8 +53,15 @@ public class SiteSurvey {
     public void setForemanId(Long foremanId) { this.foremanId = foremanId; }
     public String getReportText() { return reportText; }
     public void setReportText(String reportText) { this.reportText = reportText; }
+    // Kept out of list responses (base64 photos are huge) — fetched on demand
+    // via GET /api/surveys/{id}/photo. Clients read "hasPhoto" instead.
+    @JsonIgnore
     public String getPhotoUrl() { return photoUrl; }
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
+
+    public boolean isHasPhoto() {
+        return photoUrl != null && photoUrl.startsWith("data:");
+    }
     public LocalDate getSurveyDate() { return surveyDate; }
     public SurveyStatus getStatus() { return status; }
     public void setStatus(SurveyStatus status) { this.status = status; }

@@ -16,12 +16,29 @@ import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
 import {
   getAllSurveys,
+  getSurveyPhoto,
   getSurveysByStatus,
   submitSurvey,
   verifySurvey,
   type Survey,
 } from '../../lib/api';
 import { pickImageDataUri } from '../../lib/photo';
+
+/** Lazily loads a single report's photo so the report list stays lightweight. */
+function SurveyPhoto({ surveyId, token, style }: { surveyId: number; token: string; style: any }) {
+  const [uri, setUri] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getSurveyPhoto(token, surveyId).then((u) => {
+      if (alive) setUri(u);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [surveyId, token]);
+  if (!uri) return null;
+  return <Image source={{ uri }} style={style} resizeMode="cover" />;
+}
 
 const DEMO_SITE_ID = 1;
 
@@ -305,8 +322,8 @@ export default function Report() {
                   Report #{s.id} · Foreman #{s.foremanId} · Site {s.siteId}
                 </Text>
               </View>
-              {s.photoUrl?.startsWith('data:') && (
-                <Image source={{ uri: s.photoUrl }} style={styles.reportPhoto} resizeMode="cover" />
+              {s.hasPhoto && session && (
+                <SurveyPhoto surveyId={s.id} token={session.token} style={styles.reportPhoto} />
               )}
               <Text style={{ fontSize: 12.5, color: p.ink2, lineHeight: 19, marginTop: 8 }}>
                 {s.reportText}
@@ -351,8 +368,8 @@ export default function Report() {
                     <Text style={{ fontSize: 10, fontWeight: '700', color: c.color }}>{meta.label}</Text>
                   </View>
                 </View>
-                {s.photoUrl?.startsWith('data:') ? (
-                  <Image source={{ uri: s.photoUrl }} style={styles.reportPhoto} resizeMode="cover" />
+                {s.hasPhoto && session ? (
+                  <SurveyPhoto surveyId={s.id} token={session.token} style={styles.reportPhoto} />
                 ) : (
                   <View style={[styles.noPhoto, { backgroundColor: p.card2 }]}>
                     <Ionicons name="image-outline" size={18} color={p.ink3} />

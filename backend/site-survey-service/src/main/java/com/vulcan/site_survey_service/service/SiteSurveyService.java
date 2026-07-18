@@ -61,6 +61,12 @@ public class SiteSurveyService {
         return "Survey verified successfully — status: " + request.getStatus();
     }
 
+    public String getPhoto(Long surveyId) {
+        return siteSurveyRepository.findById(surveyId)
+                .map(SiteSurvey::getPhotoUrl)
+                .orElse(null);
+    }
+
     public long countPenalties(Long foremanId) {
         return siteSurveyRepository.countByForemanIdAndStatus(foremanId, SurveyStatus.PENALIZED);
     }
