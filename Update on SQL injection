@@ -1,0 +1,114 @@
+Here is a quick, practical briefing on SQL injection that you can share with your team.
+
+---
+
+What is SQL Injection?
+
+SQL injection is a code injection technique where an attacker inserts (or "injects") malicious SQL code into a query, tricking the database into executing unintended commands.
+
+Think of it like this: You have a form that asks for your name. Instead of typing "Kofi", an attacker types a piece of SQL code that changes the entire meaning of the query.
+
+---
+
+A Simple Example
+
+Imagine your application has a login form. Behind the scenes, it runs a query like this:
+
+```sql
+SELECT * FROM users WHERE email = 'user@email.com' AND password = 'password123';
+```
+
+Now, an attacker enters this into the email field:
+
+```
+' OR '1'='1
+```
+
+And anything into the password field.
+
+The query becomes:
+
+```sql
+SELECT * FROM users WHERE email = '' OR '1'='1' AND password = 'anything';
+```
+
+Because '1'='1' is always true, the database returns the first user it finds — often the admin. The attacker is now logged in as an admin without knowing the password.
+
+---
+
+What Can an Attacker Do?
+
+Attack Type What They Can Achieve
+Bypass authentication Log in as any user (admin) without a password
+Extract data Read sensitive data (passwords, emails, salaries, MoMo wallet IDs)
+Modify data Change payroll records, add ghost workers, alter attendance
+Delete data Wipe entire tables or databases
+Execute system commands In extreme cases, they can even run commands on the server
+
+---
+
+Why Spring Boot Protects You (And When It Doesn't)
+
+Safe by Default
+
+Spring Data JPA uses parameterized queries (also called PreparedStatement). This means user input is treated as data, not as executable SQL.
+
+Safe Example (Spring Data JPA):
+
+```java
+@Query("SELECT e FROM Employee e WHERE e.name = :name")
+Employee findByName(@Param("name") String name);
+```
+
+Even if name = "Kofi' OR '1'='1", it is treated as a literal name, not as SQL.
+
+ When You Become Vulnerable
+
+The only time you lose protection is when you use string concatenation.
+
+Vulnerable Example (Don't Do This):
+
+```java
+@Query(value = "SELECT * FROM employees WHERE name = '" + name + "'", nativeQuery = true)
+Employee findByNameUnsafe(String name);
+```
+
+Here, Spring does not protect you because you've constructed the query string manually.
+
+---
+
+The Golden Rule
+
+Never build SQL queries by concatenating strings. Always use parameterized queries.
+
+Unsafe (Concatenation) Safe (Parameterized)
+"SELECT * FROM employees WHERE name = '" + name + "'" "SELECT * FROM employees WHERE name = :name"
+
+---
+
+How to Check Your Code for SQL Injection Risks
+
+1. Search for any @Query annotation in your *Repository.java files.
+2. Check if the query uses ? or : parameters (safe) or uses + concatenation (unsafe).
+3. Review any custom native queries (nativeQuery = true) — these are more prone to mistakes.
+
+---
+
+Security Checklist for Your Team
+
+Task Status
+All custom @Query use named (:param) or positional (?1) parameters [ ]
+No string concatenation in SQL queries [ ]
+spring.jpa.show-sql=true removed from production config [ ]
+Demo data seeder uses safe SQL [ ]
+Database user has minimal privileges (e.g., no DROP TABLE permission) [ ]
+
+---
+
+Summary for Your Presentation
+
+We protect against SQL injection by using Spring Data JPA's 
+built-in parameterized queries. All user input is treated as 
+data, not code. We enforce this by never concatenating strings 
+to build SQL queries. Additionally, we disable SQL logging in 
+production to prevent sensitive data from being exposed.
