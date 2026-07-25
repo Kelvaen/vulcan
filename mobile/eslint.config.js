@@ -7,12 +7,4 @@ module.exports = defineConfig([
   {
     ignores: ["dist/*"],
   },
-  {
-    rules: {
-      // Advisory only: our screens load data on mount and setState after the
-      // fetch resolves (post-await, not a synchronous render cascade). Keep it
-      // visible as a warning rather than a hard error.
-      "react-hooks/set-state-in-effect": "warn",
-    },
-  },
 ]);
