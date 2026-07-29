@@ -6,6 +6,7 @@ import SiteBackdrop from '../../components/SiteBackdrop';
 import { Card, Notice, PrimaryButton, SectionLabel } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
+import { getCurrentCoords } from '../../lib/location';
 import {
   clockIn,
   clockOut,
@@ -89,11 +90,19 @@ export default function Home() {
     setNotice({ text: '', tone: 'good' });
     try {
       if (!onShift) {
+        const coords = await getCurrentCoords();
+        if (!coords) {
+          setNotice({
+            text: 'Location is needed to clock in. Turn on location access and try again.',
+            tone: 'error',
+          });
+          return;
+        }
         const msg = await clockIn(session.token, {
           workerId,
           siteId: site.id,
-          gpsLat: site.gpsLat,
-          gpsLng: site.gpsLng,
+          gpsLat: coords.lat,
+          gpsLng: coords.lng,
         });
         const ok = msg.toLowerCase().includes('success');
         const already = msg.toLowerCase().includes('already');

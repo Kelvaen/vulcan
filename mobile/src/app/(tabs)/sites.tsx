@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Card, Notice, PrimaryButton, SectionLabel } from '../../components/ui';
 import { useAuth } from '../../context/auth';
 import { useTheme } from '../../context/theme';
+import { getCurrentCoords } from '../../lib/location';
 import {
   assignWorkerToSite,
   createSite,
@@ -67,6 +68,21 @@ export default function Sites() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function useMyLocation() {
+    setNotice({ text: '', tone: 'good' });
+    const coords = await getCurrentCoords();
+    if (!coords) {
+      setNotice({
+        text: 'Could not read your location. Turn on location access and try again.',
+        tone: 'warn',
+      });
+      return;
+    }
+    setLat(coords.lat.toFixed(6));
+    setLng(coords.lng.toFixed(6));
+    setNotice({ text: 'Pinned this site to your current location.', tone: 'good' });
+  }
 
   async function submitSite() {
     if (!session) return;
@@ -213,6 +229,13 @@ export default function Sites() {
               <TextInput value={radius} onChangeText={setRadius} keyboardType="number-pad" placeholderTextColor={p.ink3} style={input} />
             </View>
           </View>
+          <Pressable
+            onPress={useMyLocation}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, alignSelf: 'flex-start' }}
+          >
+            <Ionicons name="navigate" size={14} color={p.accent} />
+            <Text style={{ fontSize: 12.5, fontWeight: '600', color: p.accent }}>Use my current location</Text>
+          </Pressable>
           <PrimaryButton title="Create Site" onPress={submitSite} loading={busy} style={{ marginTop: 14 }} />
         </Card>
       )}

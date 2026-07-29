@@ -3,6 +3,7 @@ package com.vulcan.attendance_service.service;
 import com.vulcan.attendance_service.dto.ClockInRequest;
 import com.vulcan.attendance_service.dto.ClockOutRequest;
 import com.vulcan.attendance_service.dto.SiteAssignmentDto;
+import com.vulcan.attendance_service.dto.SiteDto;
 import com.vulcan.attendance_service.entity.Attendance;
 import com.vulcan.attendance_service.entity.AttendanceStatus;
 import com.vulcan.attendance_service.repository.AttendanceRepository;
@@ -52,6 +53,12 @@ public class AttendanceService {
             return "Worker is not assigned to this site";
         }
 
+        // Geofence: the worker must physically be within the site's radius.
+        String geofenceError = checkGeofence(request);
+        if (geofenceError != null) {
+            return geofenceError;
+        }
+
         Attendance attendance = new Attendance();
         attendance.setWorkerId(request.getWorkerId());
         attendance.setSiteId(request.getSiteId());
@@ -82,6 +89,56 @@ public class AttendanceService {
             // due to a downstream outage (fail-open)
             return true;
         }
+    }
+
+    // Default allowed distance when a site has no explicit radius configured.
+    private static final double DEFAULT_RADIUS_METERS = 200.0;
+
+    /**
+     * Returns a user-facing error message when the worker is too far from the
+     * site, or null when the clock-in is within range. Fails open (returns null)
+     * when the site has no coordinates or the worker service is unreachable, so a
+     * misconfigured site or downstream outage never blocks the whole crew.
+     */
+    private String checkGeofence(ClockInRequest request) {
+        SiteDto site = fetchSite(request.getSiteId());
+        if (site == null || site.getGpsLat() == null || site.getGpsLng() == null) {
+            return null; // no geofence configured for this site
+        }
+        double radius = (site.getRadiusMeters() != null && site.getRadiusMeters() > 0)
+                ? site.getRadiusMeters()
+                : DEFAULT_RADIUS_METERS;
+        double distance = haversineMeters(
+                request.getGpsLat(), request.getGpsLng(),
+                site.getGpsLat(), site.getGpsLng());
+        if (distance > radius) {
+            String siteName = site.getName() != null ? site.getName() : "the site";
+            return String.format(
+                    "Too far to clock in: you are %.0f m from %s (must be within %.0f m).",
+                    distance, siteName, radius);
+        }
+        return null;
+    }
+
+    private SiteDto fetchSite(Long siteId) {
+        try {
+            return restTemplate.getForObject(
+                    workerServiceUrl + "/api/workers/sites/" + siteId, SiteDto.class);
+        } catch (Exception e) {
+            System.out.println("Error fetching site for geofence: " + e.getMessage());
+            return null; // fail-open
+        }
+    }
+
+    /** Great-circle distance between two lat/lng points, in metres. */
+    private static double haversineMeters(double lat1, double lng1, double lat2, double lng2) {
+        final double earthRadius = 6371000.0; // metres
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
     public String clockOut(ClockOutRequest request) {

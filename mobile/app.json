@@ -34,7 +34,13 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Vulcan uses your location to verify you are on-site when you clock in."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

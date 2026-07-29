@@ -39,6 +39,12 @@ public class WorkerService {
         return companyId == null ? siteRepository.findAll() : siteRepository.findByCompanyId(companyId);
     }
 
+    // One site with its coordinates. Used service-to-service by the attendance
+    // service to geofence clock-ins. Returns null when the site does not exist.
+    public Site getSiteById(Long siteId) {
+        return siteRepository.findById(siteId).orElse(null);
+    }
+
     public String assignWorkerToSite(AssignWorkerRequest request) {
         Optional<Site> siteOpt = siteRepository.findById(request.getSiteId());
         if (siteOpt.isEmpty()) return "Site not found";
