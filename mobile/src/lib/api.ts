@@ -168,6 +168,25 @@ function authed(token: string): Record<string, string> {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
+/**
+ * fetch with an abort timeout so a stalled backend (e.g. the face service
+ * still downloading its model on first use) never leaves the UI spinning
+ * forever. Throws an AbortError when the deadline passes.
+ */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  ms = 45000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function clockIn(
   token: string,
   body: { workerId: number; siteId: number; gpsLat: number; gpsLng: number },
@@ -281,14 +300,24 @@ export async function verifyGroupPhoto(
     // native: RN understands { uri, name, type } file descriptors
     form.append('file', photo as unknown as Blob);
   }
-  const res = await fetch(
-    `${API.attendance}/api/attendance/verify-group-photo?siteId=${siteId}`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    },
-  );
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      `${API.attendance}/api/attendance/verify-group-photo?siteId=${siteId}`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      },
+    );
+  } catch (e: any) {
+    if (e?.name === 'AbortError') {
+      throw new Error(
+        'Face service timed out. Make sure the AI service is running, then try again.',
+      );
+    }
+    throw new Error('Could not reach the face service. Check that it is running.');
+  }
   return res.text();
 }
 
@@ -373,7 +402,13 @@ export async function submitSurvey(
     headers: authed(token),
     body: JSON.stringify(body),
   });
-  return res.text();
+  const text = await res.text();
+  if (!res.ok) {
+    // Surface the real reason (status + server message) instead of silently
+    // treating an error body as a non-success string.
+    throw new Error(`Upload failed (${res.status}): ${text.slice(0, 200) || 'no response body'}`);
+  }
+  return text;
 }
 
 export async function getDashboard(token: string, payPeriod: string): Promise<any> {
@@ -499,10 +534,20 @@ export async function registerFace(
   } else {
     form.append('file', photo as unknown as Blob);
   }
-  const res = await fetch(`${API.ai}/register-face?worker_id=${workerId}`, {
-    method: 'POST',
-    body: form,
-  });
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(`${API.ai}/register-face?worker_id=${workerId}`, {
+      method: 'POST',
+      body: form,
+    });
+  } catch (e: any) {
+    if (e?.name === 'AbortError') {
+      throw new Error(
+        'Face service timed out. Make sure the AI service is running, then try again.',
+      );
+    }
+    throw new Error('Could not reach the face service. Check that it is running.');
+  }
   const text = await res.text();
   try {
     const json = JSON.parse(text);

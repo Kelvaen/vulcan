@@ -17,9 +17,12 @@ export async function pickImageDataUri(source: 'camera' | 'library' = 'camera'):
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) return null;
   }
+  // Request base64 up front and a modest quality so that even if the resize
+  // step below fails, the fallback still has a bounded-size image to send
+  // instead of a raw multi-megabyte photo.
   const res = useCamera
-    ? await ImagePicker.launchCameraAsync({ quality: 1 })
-    : await ImagePicker.launchImageLibraryAsync({ quality: 1 });
+    ? await ImagePicker.launchCameraAsync({ quality: 0.6, base64: true })
+    : await ImagePicker.launchImageLibraryAsync({ quality: 0.6, base64: true });
   if (res.canceled || !res.assets?.[0]) return null;
   const a = res.assets[0];
 

@@ -59,6 +59,20 @@ def ensure_schema():
     except Exception as e:
         print(f"WARNING: could not ensure face_embeddings table: {e}")
 
+@app.on_event("startup")
+def warm_up_face_model():
+    """Build the Facenet model once at startup so the first real request does
+    not pay the model download + build cost. Without this, the very first
+    enrollment can take a long time (or appear to hang) while DeepFace fetches
+    its weights on demand."""
+    try:
+        dummy = np.zeros((160, 160, 3), dtype=np.uint8)
+        DeepFace.represent(img_path=dummy, model_name="Facenet", enforce_detection=False)
+        print("Facenet model is warmed up and ready.")
+    except Exception as e:
+        print(f"WARNING: face model warm-up failed (first real request may be slow): {e}")
+
+
 @app.get("/")
 def health_check():
     return {"status": "Vulcan Face Detection Service is running"}
