@@ -23,14 +23,17 @@ public class AuthService {
     private final CompanyService companyService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final LoginAlertService loginAlertService;
 
     public AuthService(UserRepository userRepository, CompanyRepository companyRepository,
-                       CompanyService companyService, PasswordEncoder passwordEncoder, JwtService jwtService) {
+                       CompanyService companyService, PasswordEncoder passwordEncoder, JwtService jwtService,
+                       LoginAlertService loginAlertService) {
         this.userRepository = userRepository;
         this.companyRepository = companyRepository;
         this.companyService = companyService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.loginAlertService = loginAlertService;
     }
 
     /** Register a new employee into an existing company via its join code. */
@@ -102,6 +105,9 @@ public class AuthService {
         if (user.getStatus() != Status.ACTIVE) {
             return "Account not yet approved by admin";
         }
+
+        // Best-effort security alert; never blocks or fails the login.
+        loginAlertService.sendLoginAlert(user.getEmail(), user.getFullName());
 
         return jwtService.generateToken(user.getEmail(), user.getRole().name(),
                 user.getId(), user.getFullName(), user.getCompanyId());
