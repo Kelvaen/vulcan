@@ -117,8 +117,12 @@ export default function Report() {
   );
 
   async function addPhoto() {
-    const uri = await pickImageDataUri('camera');
-    if (uri) setPhoto(uri);
+    try {
+      const uri = await pickImageDataUri('camera');
+      if (uri) setPhoto(uri);
+    } catch (e: any) {
+      setNotice({ text: e?.message ?? 'Could not capture the photo', tone: 'error' });
+    }
   }
 
   async function send() {

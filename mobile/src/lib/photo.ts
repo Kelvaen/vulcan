@@ -1,4 +1,4 @@
-import * as ImageManipulator from 'expo-image-manipulator';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
 
@@ -26,12 +26,16 @@ export async function pickImageDataUri(source: 'camera' | 'library' = 'camera'):
   if (res.canceled || !res.assets?.[0]) return null;
   const a = res.assets[0];
 
+  // Downscale + recompress using the supported (SDK 54) contextual API. The old
+  // manipulateAsync is deprecated and can misbehave on device, which previously
+  // fell back to uploading the full multi-MB photo and failed the request.
   try {
-    const actions =
-      a.width && a.width > MAX_WIDTH ? [{ resize: { width: MAX_WIDTH } }] : [];
-    const out = await ImageManipulator.manipulateAsync(a.uri, actions, {
+    const context = ImageManipulator.manipulate(a.uri);
+    if (a.width && a.width > MAX_WIDTH) context.resize({ width: MAX_WIDTH });
+    const rendered = await context.renderAsync();
+    const out = await rendered.saveAsync({
       compress: 0.6,
-      format: ImageManipulator.SaveFormat.JPEG,
+      format: SaveFormat.JPEG,
       base64: true,
     });
     if (out.base64) return `data:image/jpeg;base64,${out.base64}`;
