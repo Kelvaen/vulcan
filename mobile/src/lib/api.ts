@@ -57,19 +57,58 @@ function decodeJwt(token: string): {
   }
 }
 
-/** POST /api/auth/login — returns a raw JWT string, or a plain error message. */
-export async function login(email: string, password: string): Promise<Session> {
-  const res = await fetch(`${API.auth}/api/auth/login`, {
+export type OtpPurpose = 'SIGNUP' | 'LOGIN';
+
+/** Structured result from every auth endpoint. See the backend AuthResponse. */
+export interface AuthResult {
+  status: 'VERIFY_EMAIL' | 'OTP_SENT' | 'VERIFIED' | 'OK' | 'PENDING' | 'SENT' | 'ERROR';
+  message: string;
+  token?: string | null;
+  devCode?: string | null; // the code itself, only in mock mode (no mail key)
+}
+
+/** Build a Session from a freshly issued JWT. */
+export function sessionFromToken(token: string, email: string): Session {
+  return { token, email, ...decodeJwt(token) };
+}
+
+async function authRequest(path: string, body: unknown): Promise<AuthResult> {
+  const res = await fetch(`${API.auth}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(body),
   });
-  const text = (await res.text()).trim();
-  const looksLikeJwt = text.split('.').length === 3 && text.length > 60;
-  if (!res.ok || !looksLikeJwt) {
-    throw new Error(text || `Login failed (${res.status})`);
+  let data: any = {};
+  try {
+    data = await res.json();
+  } catch {
+    return { status: 'ERROR', message: `Request failed (${res.status})` };
   }
-  return { token: text, email, ...decodeJwt(text) };
+  return {
+    status: data.status ?? (res.ok ? 'OK' : 'ERROR'),
+    message: data.message ?? '',
+    token: data.token ?? null,
+    devCode: data.devCode ?? null,
+  };
+}
+
+/**
+ * Step 1 of login. Validates the password; on success the backend emails a
+ * login code and returns status OTP_SENT (no token yet — complete with
+ * verifyOtp). Other statuses: VERIFY_EMAIL, PENDING, ERROR.
+ */
+export async function login(email: string, password: string): Promise<AuthResult> {
+  return authRequest('/api/auth/login', { email, password });
+}
+
+/** Step 2. Check the emailed code. For purpose LOGIN a success carries the JWT. */
+export async function verifyOtp(email: string, code: string, purpose: OtpPurpose): Promise<AuthResult> {
+  return authRequest('/api/auth/verify-otp', { email, code, purpose });
+}
+
+/** Re-send a signup or login code. */
+export async function resendOtp(email: string, purpose: OtpPurpose): Promise<AuthResult> {
+  return authRequest('/api/auth/resend-otp', { email, purpose });
 }
 
 export async function register(input: {
@@ -79,13 +118,8 @@ export async function register(input: {
   phoneNumber: string;
   role: Role;
   joinCode: string;
-}): Promise<string> {
-  const res = await fetch(`${API.auth}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  return res.text();
+}): Promise<AuthResult> {
+  return authRequest('/api/auth/register', input);
 }
 
 /** Create a new company and its first (owner) admin. */
@@ -95,13 +129,8 @@ export async function registerCompany(input: {
   email: string;
   password: string;
   phoneNumber: string;
-}): Promise<string> {
-  const res = await fetch(`${API.auth}/api/auth/register-company`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  return res.text();
+}): Promise<AuthResult> {
+  return authRequest('/api/auth/register-company', input);
 }
 
 export interface CompanyInfo {

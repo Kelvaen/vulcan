@@ -1,13 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { login as apiLogin, type Role, type Session } from '../lib/api';
+import { login as apiLogin, sessionFromToken, type AuthResult, type Role, type Session } from '../lib/api';
 
 interface AuthContextValue {
   session: Session | null;
   hydrated: boolean;
   displayName: string;
   initials: string;
-  signIn: (email: string, password: string) => Promise<Session>;
+  /** Step 1: validate the password. On success a login code is emailed (status OTP_SENT). */
+  signIn: (email: string, password: string) => Promise<AuthResult>;
+  /** Step 2: finish login once the emailed code is verified and a token is issued. */
+  completeLogin: (token: string, email: string) => Session;
   signOut: () => void;
 }
 
@@ -17,6 +20,9 @@ const AuthContext = createContext<AuthContextValue>({
   displayName: '',
   initials: '',
   signIn: async () => {
+    throw new Error('not ready');
+  },
+  completeLogin: () => {
     throw new Error('not ready');
   },
   signOut: () => {},
@@ -61,7 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       displayName,
       initials,
       signIn: async (email, password) => {
-        const s = await apiLogin(email.trim(), password);
+        return apiLogin(email.trim(), password);
+      },
+      completeLogin: (token, email) => {
+        const s = sessionFromToken(token, email.trim());
         setSession(s);
         AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(s)).catch(() => {});
         return s;

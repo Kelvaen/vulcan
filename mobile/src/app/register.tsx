@@ -37,6 +37,7 @@ export default function Register() {
     tone: 'good',
   });
   const [doneMsg, setDoneMsg] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ email: string; devCode: string } | null>(null);
 
   async function handleJoin() {
     setNotice({ text: '', tone: 'good' });
@@ -46,7 +47,7 @@ export default function Register() {
     }
     setBusy(true);
     try {
-      const msg = await register({
+      const r = await register({
         fullName,
         email,
         password,
@@ -54,9 +55,12 @@ export default function Register() {
         role,
         joinCode: joinCode.trim().toUpperCase(),
       });
-      const ok = msg.toLowerCase().includes('successful');
-      if (ok) setDoneMsg(msg);
-      else setNotice({ text: msg, tone: 'error' });
+      if (r.status === 'VERIFY_EMAIL') {
+        setDoneMsg(r.message);
+        setPending({ email: email.trim(), devCode: r.devCode ?? '' });
+      } else {
+        setNotice({ text: r.message || 'Registration failed', tone: 'error' });
+      }
     } catch (e: any) {
       setNotice({ text: e?.message ?? 'Registration failed', tone: 'error' });
     } finally {
@@ -72,10 +76,13 @@ export default function Register() {
     }
     setBusy(true);
     try {
-      const msg = await registerCompany({ companyName, fullName, email, password, phoneNumber });
-      const ok = msg.toLowerCase().includes('created');
-      if (ok) setDoneMsg(msg);
-      else setNotice({ text: msg, tone: 'error' });
+      const r = await registerCompany({ companyName, fullName, email, password, phoneNumber });
+      if (r.status === 'VERIFY_EMAIL') {
+        setDoneMsg(r.message);
+        setPending({ email: email.trim(), devCode: r.devCode ?? '' });
+      } else {
+        setNotice({ text: r.message || 'Could not create company', tone: 'error' });
+      }
     } catch (e: any) {
       setNotice({ text: e?.message ?? 'Could not create company', tone: 'error' });
     } finally {
@@ -106,8 +113,15 @@ export default function Register() {
               {doneMsg}
             </Text>
             <PrimaryButton
-              title="Go to sign in"
-              onPress={() => router.replace('/sign-in')}
+              title="Verify email"
+              onPress={() =>
+                pending
+                  ? router.push({
+                      pathname: '/verify-otp',
+                      params: { email: pending.email, purpose: 'SIGNUP', devCode: pending.devCode },
+                    })
+                  : router.replace('/sign-in')
+              }
               style={{ marginTop: 22, alignSelf: 'stretch' }}
             />
           </View>

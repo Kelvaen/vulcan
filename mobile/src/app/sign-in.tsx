@@ -44,8 +44,20 @@ export default function SignIn() {
     }
     setBusy(true);
     try {
-      const s = await signIn(email, password);
-      router.replace(landingFor(s.role));
+      const r = await signIn(email, password);
+      if (r.status === 'OTP_SENT') {
+        router.push({
+          pathname: '/verify-otp',
+          params: { email: email.trim(), purpose: 'LOGIN', devCode: r.devCode ?? '' },
+        });
+      } else if (r.status === 'VERIFY_EMAIL') {
+        router.push({
+          pathname: '/verify-otp',
+          params: { email: email.trim(), purpose: 'SIGNUP', devCode: r.devCode ?? '' },
+        });
+      } else {
+        setError(r.message || 'Could not sign in');
+      }
     } catch (e: any) {
       setError(e?.message ?? 'Could not sign in');
     } finally {
