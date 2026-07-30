@@ -61,16 +61,25 @@ def ensure_schema():
 
 @app.on_event("startup")
 def warm_up_face_model():
-    """Build the Facenet model once at startup so the first real request does
-    not pay the model download + build cost. Without this, the very first
-    enrollment can take a long time (or appear to hang) while DeepFace fetches
-    its weights on demand."""
-    try:
-        dummy = np.zeros((160, 160, 3), dtype=np.uint8)
-        DeepFace.represent(img_path=dummy, model_name="Facenet", enforce_detection=False)
-        print("Facenet model is warmed up and ready.")
-    except Exception as e:
-        print(f"WARNING: face model warm-up failed (first real request may be slow): {e}")
+    """Build the Facenet model once, in a background thread, so the first real
+    enrollment does not pay the model download + build cost.
+
+    This must NOT run inline: a startup handler blocks the server from accepting
+    connections until it returns, so if DeepFace stalls while fetching its
+    weights (e.g. on a network that inspects HTTPS) the whole service would
+    never come up and every request would time out. Running it on a daemon
+    thread lets the service start listening immediately and warm up behind it."""
+    import threading
+
+    def _load():
+        try:
+            dummy = np.zeros((160, 160, 3), dtype=np.uint8)
+            DeepFace.represent(img_path=dummy, model_name="Facenet", enforce_detection=False)
+            print("Facenet model is warmed up and ready.")
+        except Exception as e:
+            print(f"WARNING: face model warm-up failed (first real request may be slow): {e}")
+
+    threading.Thread(target=_load, daemon=True).start()
 
 
 @app.get("/")
