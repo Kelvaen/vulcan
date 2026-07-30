@@ -33,6 +33,13 @@ public class User {
     private Long companyId;
     private LocalDateTime createdAt;
 
+    // Whether the user has confirmed their email with the signup OTP. Defaults
+    // to true at the column level so accounts that existed before email
+    // verification was added (e.g. seeded demo users) are not locked out; new
+    // registrations explicitly set it to false until they verify.
+    @Column(columnDefinition = "boolean default true")
+    private Boolean emailVerified = true;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -46,6 +53,7 @@ public class User {
         private Role role;
         private Status status;
         private Long companyId;
+        private Boolean emailVerified = true;
 
         public UserBuilder fullName(String v) { this.fullName = v; return this; }
         public UserBuilder email(String v) { this.email = v; return this; }
@@ -55,6 +63,7 @@ public class User {
         public UserBuilder role(Role v) { this.role = v; return this; }
         public UserBuilder status(Status v) { this.status = v; return this; }
         public UserBuilder companyId(Long v) { this.companyId = v; return this; }
+        public UserBuilder emailVerified(Boolean v) { this.emailVerified = v; return this; }
 
         public User build() {
             User u = new User();
@@ -66,6 +75,7 @@ public class User {
             u.role = this.role;
             u.status = this.status;
             u.companyId = this.companyId;
+            u.emailVerified = this.emailVerified;
             return u;
         }
     }
@@ -89,4 +99,6 @@ public class User {
     public Long getCompanyId() { return companyId; }
     public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public Boolean getEmailVerified() { return emailVerified; }
+    public void setEmailVerified(Boolean emailVerified) { this.emailVerified = emailVerified; }
 }

@@ -65,6 +65,45 @@ public class LoginAlertService {
         }
     }
 
+    /**
+     * Email a one-time code for signup verification or login 2FA. Fire-and-forget
+     * like the login alert; the code is also stored server-side so a slow mail
+     * API never blocks the request. Does nothing when no mail key is set (the
+     * OtpService surfaces the code another way in that mock mode).
+     */
+    public void sendOtp(String toEmail, String fullName, String code, String purpose) {
+        if (!isEnabled() || toEmail == null || toEmail.isBlank()) return;
+        try {
+            String name = (fullName == null || fullName.isBlank()) ? "there" : fullName;
+            boolean signup = "SIGNUP".equalsIgnoreCase(purpose);
+            String subject = signup ? "Verify your Vulcan email" : "Your Vulcan login code";
+            String line = signup
+                    ? "Use this code to verify your email and finish setting up your account:"
+                    : "Use this code to finish signing in:";
+            String text = "Hi " + name + ",\n\n" + line + "\n\n    " + code + "\n\n"
+                    + "It expires in 10 minutes. If you didn't request this, you can ignore this email.\n\n— Vulcan";
+
+            String body = "{"
+                    + "\"sender\":{\"name\":\"" + esc(fromName) + "\",\"email\":\"" + esc(fromEmail) + "\"},"
+                    + "\"to\":[{\"email\":\"" + esc(toEmail) + "\",\"name\":\"" + esc(name) + "\"}],"
+                    + "\"subject\":\"" + esc(subject) + "\","
+                    + "\"textContent\":\"" + esc(text) + "\""
+                    + "}";
+
+            HttpRequest req = HttpRequest.newBuilder(URI.create(BREVO_URL))
+                    .header("api-key", apiKey)
+                    .header("Content-Type", "application/json")
+                    .header("accept", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            http.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .exceptionally(e -> null);
+        } catch (Exception e) {
+            System.out.println("OTP email failed for " + toEmail + ": " + e.getMessage());
+        }
+    }
+
     /** Minimal JSON string escaping for the values above. */
     private static String esc(String s) {
         if (s == null) return "";
