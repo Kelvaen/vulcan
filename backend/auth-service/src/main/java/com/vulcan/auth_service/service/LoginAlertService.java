@@ -6,8 +6,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.security.KeyStore;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 /**
  * Sends a "new sign-in" alert email on every successful login using Brevo's
@@ -29,9 +32,33 @@ public class LoginAlertService {
     private final String fromEmail = System.getenv().getOrDefault("MAIL_FROM", "no-reply@vulcan.app").trim();
     private final String fromName = System.getenv().getOrDefault("MAIL_FROM_NAME", "Vulcan Security").trim();
 
-    private final HttpClient http = HttpClient.newHttpClient();
+    private final HttpClient http = buildClient();
 
     public boolean isEnabled() { return !apiKey.isBlank(); }
+
+    /**
+     * On Windows, trust the OS certificate store (Windows-ROOT) so the HTTPS
+     * call to Brevo succeeds even behind corporate/HTTPS-inspection proxies whose
+     * root certificate is installed in Windows but not in the JVM's own cacerts.
+     * Falls back to the default client everywhere else.
+     */
+    private static HttpClient buildClient() {
+        try {
+            if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+                KeyStore ks = KeyStore.getInstance("Windows-ROOT");
+                ks.load(null, null);
+                TrustManagerFactory tmf =
+                        TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(ks);
+                SSLContext ctx = SSLContext.getInstance("TLS");
+                ctx.init(null, tmf.getTrustManagers(), null);
+                return HttpClient.newBuilder().sslContext(ctx).build();
+            }
+        } catch (Exception e) {
+            System.out.println("Email client: falling back to default trust store (" + e.getMessage() + ")");
+        }
+        return HttpClient.newHttpClient();
+    }
 
     /** Fire-and-forget login alert. Never throws, never blocks the caller. */
     public void sendLoginAlert(String toEmail, String fullName) {
@@ -58,8 +85,7 @@ public class LoginAlertService {
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
 
-            http.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                    .exceptionally(e -> null);
+            fireAndLog(req, toEmail);
         } catch (Exception e) {
             System.out.println("Login alert email failed for " + toEmail + ": " + e.getMessage());
         }
@@ -97,11 +123,32 @@ public class LoginAlertService {
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
 
-            http.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                    .exceptionally(e -> null);
+            fireAndLog(req, toEmail);
         } catch (Exception e) {
             System.out.println("OTP email failed for " + toEmail + ": " + e.getMessage());
         }
+    }
+
+    /**
+     * Send the request without blocking the caller, but log Brevo's answer so a
+     * rejected send (e.g. an unverified sender address, which is NOT an
+     * exception but a 400 response) is visible instead of silently swallowed.
+     */
+    private void fireAndLog(HttpRequest req, String toEmail) {
+        http.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(resp -> {
+                    if (resp.statusCode() >= 300) {
+                        System.out.println("Brevo email rejected (" + resp.statusCode()
+                                + ") for " + toEmail + ": " + resp.body());
+                    } else {
+                        System.out.println("Brevo email accepted for " + toEmail
+                                + " (" + resp.statusCode() + ")");
+                    }
+                })
+                .exceptionally(e -> {
+                    System.out.println("Brevo email error for " + toEmail + ": " + e.getMessage());
+                    return null;
+                });
     }
 
     /** Minimal JSON string escaping for the values above. */
